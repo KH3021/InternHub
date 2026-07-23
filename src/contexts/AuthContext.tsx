@@ -165,8 +165,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, s) => {
         if (s) {
           setSession(s);
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
             if (s.user) {
+              // Sync pending user profile if this was an email confirmation return
+              const pendingStr = localStorage.getItem('pendingUser');
+              if (pendingStr) {
+                try {
+                  const pending = JSON.parse(pendingStr);
+                  await insertUserProfile(s.user.id, pending.email || s.user.email || '', pending.fullName || '', pending.role || 'candidate', s.access_token);
+                  localStorage.removeItem('pendingUser');
+                } catch {
+                  // ignore
+                }
+              }
+
               const profile = await fetchProfile(s.user.id);
               setUser(profile);
             }
@@ -178,6 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(null);
           localStorage.removeItem('internhub_fallback_user');
           localStorage.removeItem('internhub_fallback_session');
+          localStorage.removeItem('pendingUser');
         }
 
         setIsLoading(false);
@@ -369,6 +382,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: data.email,
         password: data.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: data.fullName,
             role: data.role,
