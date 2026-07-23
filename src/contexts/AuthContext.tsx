@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
 
-  // Fetch user profile from public.users after auth
+  // Fetch user profile from public.users after auth (auto-creates row if missing)
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       const { data, error } = await supabase
@@ -109,34 +109,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .single();
 
-      if (error || !data) {
-        const authUser = session?.user;
+      if (data) {
         return {
-          id: userId,
-          email: authUser?.email || '',
-          fullName: authUser?.user_metadata?.full_name || 'User',
-          role: (authUser?.user_metadata?.role as UserRole) || 'candidate',
-          avatarUrl: authUser?.user_metadata?.avatar_url,
+          id: data.id,
+          email: data.email,
+          fullName: data.full_name,
+          role: data.role as UserRole,
+          avatarUrl: data.avatar_url ?? undefined,
           profileCompleted: true,
         };
       }
 
+      // If user profile doesn't exist in public.users yet, auto-upsert it now using authenticated session!
+      const { data: authRes } = await supabase.auth.getUser();
+      const authUser = authRes?.user;
+      const email = authUser?.email || '';
+      const fullName = authUser?.user_metadata?.full_name || email.split('@')[0] || 'User';
+      const role = (authUser?.user_metadata?.role as UserRole) || 'candidate';
+
+      if (authUser?.id) {
+        const { error: upsertErr } = await supabase
+          .from('users')
+          .upsert({
+            id: authUser.id,
+            email,
+            full_name: fullName,
+            role,
+          }, { onConflict: 'id' });
+
+        if (upsertErr) {
+          console.warn('[AuthContext] Auto-upsert public.users error:', upsertErr.message);
+        }
+      }
+
       return {
-        id: data.id,
-        email: data.email,
-        fullName: data.full_name,
-        role: data.role as UserRole,
-        avatarUrl: data.avatar_url ?? undefined,
+        id: userId,
+        email,
+        fullName,
+        role,
         profileCompleted: true,
       };
     } catch {
-      const authUser = session?.user;
       return {
         id: userId,
-        email: authUser?.email || '',
-        fullName: authUser?.user_metadata?.full_name || 'User',
-        role: (authUser?.user_metadata?.role as UserRole) || 'candidate',
-        avatarUrl: authUser?.user_metadata?.avatar_url,
+        email: '',
+        fullName: 'User',
+        role: 'candidate',
         profileCompleted: true,
       };
     }
