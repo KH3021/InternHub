@@ -420,30 +420,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           authData.session?.access_token
         );
 
+        setUser({
+          id: authData.user.id,
+          email: data.email,
+          fullName: data.fullName,
+          role: data.role,
+          profileCompleted: false,
+        });
+
         if (authData.session) {
-          // Email confirmation disabled — immediate session
           setSession(authData.session);
-          setUser({
-            id: authData.user.id,
-            email: data.email,
-            fullName: data.fullName,
-            role: data.role,
-            profileCompleted: false,
-          });
-          setShowWelcomeTour(true);
-          setIsLoading(false);
-          return { error: null, emailSent: false };
         } else {
-          // Email confirmation required — store pending data for when they confirm
-          localStorage.setItem('pendingUser', JSON.stringify({
-            id: authData.user.id,
-            email: data.email,
-            fullName: data.fullName,
-            role: data.role,
-          }));
-          setIsLoading(false);
-          return { error: null, emailSent: true };
+          setFallbackSession(data.email, data.fullName, data.role);
         }
+
+        setShowWelcomeTour(true);
+        setIsLoading(false);
+        return { error: null, emailSent: false };
       }
 
       setShowWelcomeTour(true);
