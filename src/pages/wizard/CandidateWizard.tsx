@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GraduationCap, Upload, CheckCircle2, ArrowRight } from 'lucide-react';
+import { GraduationCap, Upload, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { profileService } from '../../services/supabaseApi';
 
 export default function CandidateWizard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [step, setStep] = useState(1);
   const [education, setEducation] = useState('B.Tech Computer Science');
@@ -11,9 +14,29 @@ export default function CandidateWizard() {
   const [experienceYears, setExperienceYears] = useState('0');
   const [preferredLocation, setPreferredLocation] = useState('Remote / San Francisco');
   const [resumeUploaded, setResumeUploaded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleComplete = (e: React.FormEvent) => {
+  const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.id) {
+      setIsSaving(true);
+      try {
+        await profileService.saveProfile(user.id, {
+          email: user.email,
+          fullName: user.fullName,
+          role: 'candidate',
+          education,
+          experienceYears,
+          preferredLocation,
+          skills,
+          resumeUrl: resumeUploaded ? 'https://example.com/resume.pdf' : '',
+        });
+      } catch (err) {
+        console.warn('[Wizard] Error saving candidate profile:', err);
+      } finally {
+        setIsSaving(false);
+      }
+    }
     navigate('/dashboard');
   };
 
@@ -137,9 +160,17 @@ export default function CandidateWizard() {
               </button>
               <button
                 type="submit"
-                className="w-2/3 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 transition-all"
+                disabled={isSaving}
+                className="w-2/3 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Save & Go to Dashboard
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Saving to Supabase...</span>
+                  </>
+                ) : (
+                  <span>Save & Go to Dashboard</span>
+                )}
               </button>
             </div>
           </div>

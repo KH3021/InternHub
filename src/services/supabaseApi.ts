@@ -184,21 +184,40 @@ export const profileService = {
   async saveProfile(userId: string, profileData: any) {
     if (!isValidUUID(userId)) return true;
 
-    await supabase
-      .from('users')
-      .update({ full_name: profileData.fullName })
-      .eq('id', userId);
+    // 1. Ensure user row exists in public.users
+    const userPayload: any = { id: userId };
+    if (profileData.fullName) userPayload.full_name = profileData.fullName;
+    if (profileData.email) userPayload.email = profileData.email;
+    if (profileData.role) userPayload.role = profileData.role;
 
+    const { error: userErr } = await supabase
+      .from('users')
+      .upsert(userPayload, { onConflict: 'id' });
+
+    if (userErr) {
+      console.warn('[ProfileService] Error upserting users:', userErr.message);
+    }
+
+    // 2. Save to candidate_profiles if candidate
     if (profileData.role === 'candidate' || !profileData.role) {
-      await supabase
+      const candidatePayload: any = {
+        user_id: userId,
+        bio: profileData.bio || '',
+        headline: profileData.headline || profileData.education || '',
+        location: profileData.preferredLocation || profileData.location || '',
+        resume_url: profileData.resumeUrl || '',
+      };
+
+      if (profileData.education) candidatePayload.education = profileData.education;
+      if (profileData.experienceYears) candidatePayload.experience_years = profileData.experienceYears;
+
+      const { error: candidateErr } = await supabase
         .from('candidate_profiles')
-        .upsert({
-          user_id: userId,
-          bio: profileData.bio || '',
-          headline: profileData.headline || '',
-          location: profileData.location || '',
-          resume_url: profileData.resumeUrl || '',
-        });
+        .upsert(candidatePayload, { onConflict: 'user_id' });
+
+      if (candidateErr) {
+        console.warn('[ProfileService] Error upserting candidate_profiles:', candidateErr.message);
+      }
     }
     return true;
   },
