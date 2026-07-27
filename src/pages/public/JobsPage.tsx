@@ -31,7 +31,7 @@ export default function JobsPage() {
     }
 
     const job = featuredJobs.find((j) => j.id === jobId);
-    const { success } = await applicationService.applyForJob(
+    const { success, error } = await applicationService.applyForJob(
       user.id,
       jobId,
       job?.title,
@@ -42,6 +42,8 @@ export default function JobsPage() {
       setAppliedJobIds((prev) => [...prev, jobId]);
       setToastMessage(`🎉 Application submitted for ${job?.title || 'Position'} at ${job?.companyName || 'Company'}! Saved to Supabase.`);
       setTimeout(() => setToastMessage(''), 5000);
+    } else {
+      alert(`Failed to apply: ${error}`);
     }
   };
 

@@ -31,7 +31,7 @@ export default function InternshipsPage() {
     }
 
     const internship = featuredInternships.find((i) => i.id === internshipId);
-    const { success } = await applicationService.applyForJob(
+    const { success, error } = await applicationService.applyForJob(
       user.id,
       internshipId,
       internship?.title,
@@ -42,6 +42,8 @@ export default function InternshipsPage() {
       setAppliedJobIds((prev) => [...prev, internshipId]);
       setToastMessage(`🎉 Application submitted for ${internship?.title || 'Internship'} at ${internship?.companyName || 'Company'}! Saved to Supabase.`);
       setTimeout(() => setToastMessage(''), 5000);
+    } else {
+      alert(`Failed to apply: ${error}`);
     }
   };
 
