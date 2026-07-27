@@ -24,7 +24,6 @@ import RegisterRecruiter from './pages/auth/RegisterRecruiter';
 import RegisterCompany from './pages/auth/RegisterCompany';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
-import VerifyEmail from './pages/auth/VerifyEmail';
 
 // Wizards
 import CandidateWizard from './pages/wizard/CandidateWizard';
@@ -103,7 +102,6 @@ export default function App() {
                 <Route path="/register/company" element={<RegisterCompany />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/wizard/candidate" element={<CandidateWizard />} />
                 <Route path="/wizard/recruiter" element={<RecruiterWizard />} />
               </Route>

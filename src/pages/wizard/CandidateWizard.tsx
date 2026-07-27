@@ -91,37 +91,26 @@ export default function CandidateWizard() {
       return;
     }
 
-    const profileData = {
-      role: 'candidate' as const,
-      education,
-      experienceYears,
-      preferredLocation,
-      skills,
-    };
-
     if (user?.id) {
       setIsSaving(true);
       try {
         await profileService.saveProfile(user.id, {
           email: user.email,
           fullName: user.fullName,
-          ...profileData,
+          role: 'candidate',
+          education,
+          experienceYears,
+          preferredLocation,
+          skills,
           resumeUrl: resumeUrl || (resumeFile ? `https://supabase.co/storage/resumes/${user.id}_resume.pdf` : ''),
         });
-        navigate('/dashboard');
       } catch (err) {
         console.warn('[Wizard] Error saving candidate profile:', err);
       } finally {
         setIsSaving(false);
       }
-    } else {
-      // User is not yet verified. Save wizard data to local storage.
-      localStorage.setItem('pendingWizard', JSON.stringify(profileData));
-      
-      // If they uploaded a file while anonymous, we couldn't upload it to Supabase
-      // because of RLS. They will have to upload it again on the dashboard later.
-      navigate('/verify-email');
     }
+    navigate('/dashboard');
   };
 
   return (
