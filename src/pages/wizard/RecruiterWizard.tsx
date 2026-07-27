@@ -93,7 +93,7 @@ export default function RecruiterWizard() {
         </span>
       </div>
 
-      <form onSubmit={handleComplete} className="space-y-4">
+      <form onSubmit={handleComplete} className="space-y-4" autoComplete="off">
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
             Company Name
@@ -104,6 +104,7 @@ export default function RecruiterWizard() {
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder="e.g. TechCorp Inc."
+            autoComplete="off"
             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
@@ -118,6 +119,7 @@ export default function RecruiterWizard() {
             value={designation}
             onChange={(e) => setDesignation(e.target.value)}
             placeholder="e.g. Lead Talent Partner"
+            autoComplete="off"
             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
