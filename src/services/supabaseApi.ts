@@ -112,6 +112,45 @@ export const jobService = {
       .eq('user_id', userId);
     return data ? data.map((row: any) => row.job_id) : [];
   },
+
+  async createJob(jobData: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    const payload = {
+      title: jobData.title || 'New Position',
+      location: jobData.location || 'Remote',
+      salary: jobData.salary || 'Negotiable',
+      job_type: jobData.jobType || 'full-time',
+      work_mode: jobData.workMode || 'Remote',
+      description: jobData.description || 'Job description goes here',
+      posted_by: jobData.recruiterId || null,
+      company_id: '00000000-0000-0000-0002-000000000001' // Defaulting to Google for now since we don't have company setup in UI
+    };
+
+    const { data, error } = await supabase
+      .from('jobs')
+      .insert(payload)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.warn('[JobService] Error creating job:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  },
+
+  async getRecruiterJobs(recruiterId: string): Promise<Job[]> {
+    if (!isValidUUID(recruiterId)) return [];
+    
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('posted_by', recruiterId)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+    return data.map((j: any) => jobRowToJob(j));
+  },
 };
 
 // ============================================================================
