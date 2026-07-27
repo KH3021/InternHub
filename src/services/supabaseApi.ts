@@ -145,16 +145,26 @@ export const companyService = {
 // ============================================================================
 export const applicationService = {
   async applyForJob(candidateId: string, jobId: string, jobTitle?: string, companyName?: string, coverLetter?: string, resumeUrl?: string) {
+    const newApp = { 
+      id: Date.now().toString(), 
+      job_id: jobId, 
+      candidate_id: candidateId, 
+      status: 'applied', 
+      created_at: new Date().toISOString(),
+      cover_letter: coverLetter || `Application submitted for ${jobTitle || 'Position'} at ${companyName || 'Company'}.`,
+      resume_url: resumeUrl || ''
+    };
+
     if (!isValidUUID(candidateId)) {
-      return { success: true, data: { id: Date.now().toString(), job_id: jobId, candidate_id: candidateId, status: 'applied', created_at: new Date().toISOString() } };
+      return { success: true, data: newApp };
     }
 
     const payload: any = {
       job_id: isValidUUID(jobId) ? jobId : '00000000-0000-0000-0000-000000000001',
       candidate_id: candidateId,
       status: 'applied',
-      cover_letter: coverLetter || `Application submitted for ${jobTitle || 'Position'} at ${companyName || 'Company'}.`,
-      resume_url: resumeUrl || '',
+      cover_letter: newApp.cover_letter,
+      resume_url: newApp.resume_url,
     };
 
     const { data, error } = await supabase
@@ -165,8 +175,14 @@ export const applicationService = {
 
     if (error) {
       console.warn('[ApplicationService] Error inserting application into Supabase:', error.message);
-      // Return optimistic success if schema constraint occurs
-      return { success: true, data: { id: Date.now().toString(), ...payload, created_at: new Date().toISOString() } };
+      // Save to localStorage as fallback for dummy data
+      const fallbackApps = JSON.parse(localStorage.getItem(`fallback_apps_${candidateId}`) || '[]');
+      // Avoid duplicate applications in fallback
+      if (!fallbackApps.find((a: any) => a.job_id === jobId)) {
+        fallbackApps.push(newApp);
+        localStorage.setItem(`fallback_apps_${candidateId}`, JSON.stringify(fallbackApps));
+      }
+      return { success: true, data: newApp };
     }
 
     return { success: true, data };
@@ -181,8 +197,11 @@ export const applicationService = {
       .eq('candidate_id', candidateId)
       .order('created_at', { ascending: false });
 
-    if (error || !data) return [];
-    return data;
+    const fallbackApps = JSON.parse(localStorage.getItem(`fallback_apps_${candidateId}`) || '[]');
+
+    if (error || !data) return fallbackApps;
+    
+    return [...data, ...fallbackApps].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
 };
 
