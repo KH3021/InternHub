@@ -12,13 +12,15 @@ export default function AuthLayout() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 -z-10 h-96 w-96 rounded-full bg-primary-400/15 blur-3xl dark:bg-primary-600/10"></div>
 
       {/* Top Header */}
-      <header className="flex justify-between items-center max-w-6xl mx-auto w-full">
-        <Link to="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 font-semibold text-sm transition-colors">
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back to Home</span>
-        </Link>
+      <header className="flex justify-between items-center max-w-6xl mx-auto w-full relative">
+        <div className="flex-1 flex justify-start">
+          <Link to="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 font-semibold text-sm transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
 
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
           <div className="bg-gradient-to-tr from-primary-600 to-indigo-600 text-white p-1.5 rounded-lg flex items-center justify-center shadow-md">
             <Briefcase className="h-4 w-4" />
           </div>
@@ -27,13 +29,15 @@ export default function AuthLayout() {
           </span>
         </Link>
 
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
-          aria-label="Toggle Theme"
-        >
-          {isDark ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5" />}
-        </button>
+        <div className="flex-1 flex justify-end">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Toggle Theme"
+          >
+            {isDark ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
       </header>
 
       {/* Auth Content */}

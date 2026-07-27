@@ -10,9 +10,9 @@ export default function RecruiterWizard() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [designation, setDesignation] = useState('Senior Technical Recruiter');
+  const [designation, setDesignation] = useState('');
   const [companyName, setCompanyName] = useState(location.state?.companyName || '');
-  const [companyBio, setCompanyBio] = useState('Leading provider of enterprise software solutions.');
+  const [companyBio, setCompanyBio] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUploaded, setLogoUploaded] = useState(false);
   const [logoError, setLogoError] = useState('');
