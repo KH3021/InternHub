@@ -13,6 +13,7 @@ export default function InternshipsPage() {
   const [query, setQuery] = useState('');
   const [workMode, setWorkMode] = useState<string>('All');
   const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]);
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [internships, setInternships] = useState<Internship[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +30,9 @@ export default function InternshipsPage() {
       applicationService.getCandidateApplications(user.id).then((apps) => {
         const ids = apps.map((a: any) => a.job_id);
         setAppliedJobIds(ids);
+      });
+      jobService.getSavedJobIds(user.id).then((ids) => {
+        setSavedJobIds(ids);
       });
     }
   }, [user]);
@@ -61,8 +65,16 @@ export default function InternshipsPage() {
       navigate('/login');
       return;
     }
-    await jobService.saveJob(user.id, internshipId);
-    setToastMessage('Internship saved to your dashboard!');
+    const isSaved = savedJobIds.includes(internshipId);
+    if (isSaved) {
+      await jobService.unsaveJob(user.id, internshipId);
+      setSavedJobIds((prev) => prev.filter(id => id !== internshipId));
+      setToastMessage('Internship removed from your dashboard.');
+    } else {
+      await jobService.saveJob(user.id, internshipId);
+      setSavedJobIds((prev) => [...prev, internshipId]);
+      setToastMessage('Internship saved to your dashboard!');
+    }
     setTimeout(() => setToastMessage(''), 3000);
   };
 
@@ -131,6 +143,7 @@ export default function InternshipsPage() {
                   internship={internship}
                   onApply={handleApply}
                   onSave={handleSave}
+                  isSaved={savedJobIds.includes(internship.id)}
                 />
                 {isApplied && (
                   <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">

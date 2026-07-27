@@ -6,9 +6,10 @@ interface JobCardProps {
   job: Job;
   onApply?: (jobId: string) => void;
   onSave?: (jobId: string) => void;
+  isSaved?: boolean;
 }
 
-export default function JobCard({ job, onApply, onSave }: JobCardProps) {
+export default function JobCard({ job, onApply, onSave, isSaved }: JobCardProps) {
   return (
     <div className="group bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-800 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full relative overflow-hidden">
       
@@ -82,10 +83,14 @@ export default function JobCard({ job, onApply, onSave }: JobCardProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => onSave && onSave(job.id)}
-            className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            title="Save Job"
+            className={`p-2 rounded-xl transition-colors ${
+              isSaved 
+                ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30' 
+                : 'text-slate-400 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+            title={isSaved ? "Unsave Job" : "Save Job"}
           >
-            <Bookmark className="h-4 w-4" />
+            <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
           </button>
           
           <button

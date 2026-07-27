@@ -6,9 +6,10 @@ interface InternshipCardProps {
   internship: Internship;
   onApply?: (id: string) => void;
   onSave?: (id: string) => void;
+  isSaved?: boolean;
 }
 
-export default function InternshipCard({ internship, onApply, onSave }: InternshipCardProps) {
+export default function InternshipCard({ internship, onApply, onSave, isSaved }: InternshipCardProps) {
   return (
     <div className="group bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-800 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full relative overflow-hidden">
       
@@ -86,10 +87,14 @@ export default function InternshipCard({ internship, onApply, onSave }: Internsh
         <div className="flex items-center gap-2">
           <button
             onClick={() => onSave && onSave(internship.id)}
-            className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            title="Save Internship"
+            className={`p-2 rounded-xl transition-colors ${
+              isSaved 
+                ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30' 
+                : 'text-slate-400 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+            title={isSaved ? "Unsave Internship" : "Save Internship"}
           >
-            <Bookmark className="h-4 w-4" />
+            <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
           </button>
           
           <button

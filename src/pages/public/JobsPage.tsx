@@ -13,6 +13,7 @@ export default function JobsPage() {
   const [query, setQuery] = useState('');
   const [workMode, setWorkMode] = useState<string>('All');
   const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]);
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +30,9 @@ export default function JobsPage() {
       applicationService.getCandidateApplications(user.id).then((apps) => {
         const ids = apps.map((a: any) => a.job_id);
         setAppliedJobIds(ids);
+      });
+      jobService.getSavedJobIds(user.id).then((ids) => {
+        setSavedJobIds(ids);
       });
     }
   }, [user]);
@@ -61,8 +65,16 @@ export default function JobsPage() {
       navigate('/login');
       return;
     }
-    await jobService.saveJob(user.id, jobId);
-    setToastMessage('Job saved to your dashboard!');
+    const isSaved = savedJobIds.includes(jobId);
+    if (isSaved) {
+      await jobService.unsaveJob(user.id, jobId);
+      setSavedJobIds((prev) => prev.filter(id => id !== jobId));
+      setToastMessage('Job removed from your dashboard.');
+    } else {
+      await jobService.saveJob(user.id, jobId);
+      setSavedJobIds((prev) => [...prev, jobId]);
+      setToastMessage('Job saved to your dashboard!');
+    }
     setTimeout(() => setToastMessage(''), 3000);
   };
 
@@ -136,6 +148,7 @@ export default function JobsPage() {
                   job={job}
                   onApply={handleApply}
                   onSave={handleSave}
+                  isSaved={savedJobIds.includes(job.id)}
                 />
                 {isApplied && (
                   <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
