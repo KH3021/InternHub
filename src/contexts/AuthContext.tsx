@@ -183,6 +183,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
               }
 
+              // Sync pending wizard profile data if present
+              const pendingWizardStr = localStorage.getItem('pendingWizard');
+              if (pendingWizardStr) {
+                try {
+                  const pendingWizard = JSON.parse(pendingWizardStr);
+                  const client = createAuthenticatedClient(s.access_token);
+                  await client.from('users').update({
+                    education: pendingWizard.education,
+                    experience_years: pendingWizard.experienceYears,
+                    preferred_location: pendingWizard.preferredLocation,
+                    skills: pendingWizard.skills,
+                  }).eq('id', s.user.id);
+                  localStorage.removeItem('pendingWizard');
+                } catch (e) {
+                  console.error('Failed to sync pending wizard', e);
+                }
+              }
+
               const profile = await fetchProfile(s.user.id);
               setUser(profile);
             }
@@ -193,6 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setSession(null);
           localStorage.removeItem('pendingUser');
+          localStorage.removeItem('pendingWizard');
         }
 
         setIsLoading(false);

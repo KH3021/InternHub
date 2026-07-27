@@ -56,30 +56,9 @@ export default function RegisterCandidate() {
       return;
     }
 
-    if (sent) {
-      setEmailSent(true);
-    } else {
-      navigate('/wizard/candidate');
-    }
+    navigate('/wizard/candidate');
   };
 
-  if (emailSent) {
-    return (
-      <div className="max-w-md mx-auto w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-8 rounded-3xl shadow-xl text-center space-y-4">
-        <div className="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-        </div>
-        <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Check your inbox!</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          We sent a verification email to <span className="font-bold text-slate-700 dark:text-slate-200">{email}</span>.
-          Click the link to activate your candidate account.
-        </p>
-        <Link to="/login" className="inline-block mt-2 text-sm font-bold text-primary-600 dark:text-primary-400 hover:underline">
-          Back to Login
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-md mx-auto w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-8 rounded-3xl shadow-xl transition-colors duration-300">
