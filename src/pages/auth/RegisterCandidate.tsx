@@ -34,6 +34,14 @@ export default function RegisterCandidate() {
 
     setIsSubmitting(true);
 
+    // Explicit database check for duplicates as requested
+    const dupCheck = await userService.checkDuplicateUser(email, phone);
+    if (dupCheck.isDuplicate) {
+      setIsSubmitting(false);
+      setError(dupCheck.message || 'An account with this email or mobile number already exists.');
+      return;
+    }
+
     const { error: err, emailSent: sent } = await signUp({
       email,
       password,

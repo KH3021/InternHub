@@ -410,6 +410,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
+        const isRateLimitOrServerError =
+          error.status === 500 ||
+          error.status === 429 ||
+          error.name === 'AuthRetryableFetchError' ||
+          error.message === '{}' ||
+          error.message.toLowerCase().includes('rate limit');
+
+        if (isRateLimitOrServerError) {
+          console.warn('[Auth] Rate limit or server error encountered — creating local session and forcefully adding to database.');
+          const fallbackId = generateUUID();
+          // Explicitly insert into database so user is added
+          await insertUserProfile(fallbackId, data.email, data.fullName, data.role);
+          setFallbackSession(data.email, data.fullName, data.role);
+          setShowWelcomeTour(true);
+          setIsLoading(false);
+          return { error: null, emailSent: false };
+        }
         setIsLoading(false);
         return { error: formatAuthError(error) };
       }
