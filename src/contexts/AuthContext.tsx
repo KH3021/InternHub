@@ -359,21 +359,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         provider: provider as Provider,
         options: {
           redirectTo: `${window.location.origin}/wizard/candidate`,
-          skipBrowserRedirect: true,
         },
       });
 
-      if (error || !data?.url) {
-        console.warn(`[Auth] OAuth provider '${provider}' disabled on Supabase — initiating fallback session.`);
-        setFallbackSession(`${provider}_user@gmail.com`, `Alex (${provider.toUpperCase()} User)`, 'candidate');
-        return { error: null };
+      if (error) {
+        return { error: formatAuthError(error) };
       }
 
-      window.location.href = data.url;
       return { error: null };
-    } catch {
-      setFallbackSession(`${provider}_user@gmail.com`, `Alex (${provider.toUpperCase()} User)`, 'candidate');
-      return { error: null };
+    } catch (e: any) {
+      return { error: formatAuthError(e) };
     }
   };
 
