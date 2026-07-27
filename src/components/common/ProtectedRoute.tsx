@@ -20,11 +20,11 @@ function AuthLoader() {
 }
 
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, role, user, isLoading } = useAuth();
+  const { isAuthenticated, session, role, user, isLoading } = useAuth();
   const location = useLocation();
 
-  // Wait for Supabase session to be resolved
-  if (isLoading) return <AuthLoader />;
+  // Wait for Supabase session to be resolved, or if we have a session but the profile is still fetching
+  if (isLoading || (session && !isAuthenticated)) return <AuthLoader />;
 
   // Not logged in → send to login, preserving intended destination
   if (!isAuthenticated) {
