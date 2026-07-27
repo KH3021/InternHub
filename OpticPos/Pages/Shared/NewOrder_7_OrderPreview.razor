@@ -1,0 +1,163 @@
+@page "/new-order/step7"
+@inject OrderDraftService DraftService
+@inject WhatsAppMessageBuilder MsgBuilder
+@inject NavigationManager Nav
+
+<div class="top-bar">
+    <div>
+        <h2>Step 7: Order Preview</h2>
+        <div style="color: var(--text-muted)">Review and place order</div>
+    </div>
+</div>
+
+<div class="page-content" style="display: flex; gap: 20px;">
+    <!-- Left Column: Summary -->
+    <div style="flex: 2; display: flex; flex-direction: column; gap: 20px;">
+        <div class="card" style="display: flex; gap: 20px;">
+            <div style="flex: 1;">
+                <h4 style="color: var(--text-muted); margin-top: 0;">PRESCRIPTION</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <div>
+                        <div style="font-weight: bold;">OD (Right)</div>
+                        <div style="font-size: 0.9rem;">SPH: @rx.RightSph | CYL: @rx.RightCyl</div>
+                        <div style="font-size: 0.9rem;">AXIS: @rx.RightAxis | ADD: @rx.RightAdd</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">OS (Left)</div>
+                        <div style="font-size: 0.9rem;">SPH: @rx.LeftSph | CYL: @rx.LeftCyl</div>
+                        <div style="font-size: 0.9rem;">AXIS: @rx.LeftAxis | ADD: @rx.LeftAdd</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.9rem;">PD: @rx.Pd</div>
+            </div>
+            <div style="flex: 1; border-left: 1px solid var(--border-light); padding-left: 20px;">
+                <h4 style="color: var(--text-muted); margin-top: 0;">LENS DETAILS</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><span style="color: var(--text-muted); font-size: 0.8rem;">Type</span><br/><b>@order.LensType</b></div>
+                    <div><span style="color: var(--text-muted); font-size: 0.8rem;">Quality</span><br/><b>@order.QualityTier</b></div>
+                    <div><span style="color: var(--text-muted); font-size: 0.8rem;">Company</span><br/><b>@company?.Name</b></div>
+                    <div><span style="color: var(--text-muted); font-size: 0.8rem;">Product</span><br/><b>@product?.Name</b></div>
+                    <div><span style="color: var(--text-muted); font-size: 0.8rem;">Index</span><br/><b>@product?.Index</b></div>
+                    <div><span style="color: var(--text-muted); font-size: 0.8rem;">Coating</span><br/><b>@product?.Coating</b></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">Features</span><br/>
+                    <b>@(features.Any() ? string.Join(", ", features) : "None")</b>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; background-color: var(--accent-primary-light);">
+            <div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Order Summary</div>
+                <div style="font-size: 0.9rem;">MRP: ₹@product?.Price.ToString("N0")</div>
+                <div style="font-size: 0.9rem;">Quantity: @order.Quantity Pair(s)</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Total Amount</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-primary);">₹@((product?.Price * order.Quantity)?.ToString("N0"))</div>
+            </div>
+        </div>
+        
+        <div class="card" style="border-left: 4px solid var(--accent-green);">
+            <h4 style="margin-top: 0;">WhatsApp Order to Company</h4>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Only order details (lens, prescription, product) are sent. Customer data remains private on your device.</p>
+            <button class="btn whatsapp-btn" @onclick="SendOrder">
+                💬 SEND ORDER
+            </button>
+        </div>
+    </div>
+
+    <!-- Right Column: WhatsApp Preview -->
+    <div style="flex: 1;" class="card">
+        <h4 style="margin-top: 0; color: var(--accent-green); display: flex; align-items: center; gap: 5px;">
+            💬 Message Preview
+        </h4>
+        <div class="whatsapp-bubble">
+            <pre style="font-family: inherit; margin: 0; white-space: pre-wrap; font-size: 0.85rem;">@whatsappMessage</pre>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-action-bar">
+    <button class="btn btn-outline" @onclick="GoBack">Back</button>
+</div>
+
+<style>
+    .whatsapp-btn {
+        background-color: var(--accent-green);
+        color: white;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.1rem;
+    }
+    .whatsapp-bubble {
+        background-color: #E8F5E9;
+        border-radius: 12px;
+        border-top-left-radius: 0;
+        padding: 15px;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .whatsapp-bubble::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -10px;
+        border-top: 10px solid #E8F5E9;
+        border-left: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+    }
+</style>
+
+@code {
+    private Order order;
+    private Prescription rx;
+    private Company company;
+    private Product product;
+    private List<string> features;
+    
+    private string whatsappMessage = "";
+
+    protected override void OnInitialized()
+    {
+        order = DraftService.CurrentOrder;
+        rx = DraftService.CurrentPrescription;
+        company = DraftService.SelectedCompany;
+        product = DraftService.SelectedProduct;
+        features = DraftService.SelectedFeatures;
+        
+        whatsappMessage = MsgBuilder.BuildOrderMessage(order, rx, company, product, features);
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/new-order/step6");
+    }
+
+    private async Task SendOrder()
+    {
+        // 1. Finalize and save to local DB
+        await DraftService.FinalizeOrderAsync();
+        
+        // 2. Launch WhatsApp URI
+        string encodedMessage = Uri.EscapeDataString(whatsappMessage);
+        string uri = $"whatsapp://send?text={encodedMessage}";
+        
+        try
+        {
+            await Microsoft.Maui.ApplicationModel.Launcher.Default.OpenAsync(new Uri(uri));
+        }
+        catch (Exception)
+        {
+            // WhatsApp not installed or error launching
+            // For a robust app, we should show an alert here.
+        }
+        
+        // Navigate back to Dashboard or Orders
+        Nav.NavigateTo("/orders");
+    }
+}

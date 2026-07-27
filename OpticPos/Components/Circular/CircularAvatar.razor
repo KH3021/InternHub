@@ -1,0 +1,26 @@
+<div class="circular-avatar @CssClass">
+    <span class="avatar-text">@Text</span>
+</div>
+
+<style>
+    .circular-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-circle);
+        background-color: var(--accent-primary-light);
+        color: var(--accent-primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1rem;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string Text { get; set; } = "?";
+
+    [Parameter]
+    public string CssClass { get; set; } = string.Empty;
+}

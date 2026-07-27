@@ -1,0 +1,55 @@
+@page "/"
+@page "/dashboard"
+
+<div class="top-bar">
+    <div>
+        <h2>Dashboard</h2>
+        <div style="color: var(--text-muted)">Welcome to Optic POS</div>
+    </div>
+    <div>@DateTime.Now.ToString("dd MMM yyyy, hh:mm tt")</div>
+</div>
+
+<div class="page-content">
+    <div class="card" style="margin-bottom: 20px;">
+        <h3>Quick Actions</h3>
+        <button class="btn btn-primary" @onclick="GoToNewOrder">Start New Order</button>
+    </div>
+
+    <!-- Footer feature strip -->
+    <div style="display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-light);">
+        <div style="text-align: center; width: 15%;">
+            <CircularIconButton Icon="🔒" />
+            <div style="font-size: 0.8rem; margin-top: 5px;">Customer Data Safe</div>
+        </div>
+        <div style="text-align: center; width: 15%;">
+            <CircularIconButton Icon="💬" CssClass="whatsapp-icon" />
+            <div style="font-size: 0.8rem; margin-top: 5px;">WhatsApp Integration</div>
+        </div>
+        <div style="text-align: center; width: 15%;">
+            <CircularIconButton Icon="⚡" />
+            <div style="font-size: 0.8rem; margin-top: 5px;">Fast Ordering</div>
+        </div>
+        <div style="text-align: center; width: 15%;">
+            <CircularIconButton Icon="📜" />
+            <div style="font-size: 0.8rem; margin-top: 5px;">Order History</div>
+        </div>
+        <div style="text-align: center; width: 15%;">
+            <CircularIconButton Icon="📊" />
+            <div style="font-size: 0.8rem; margin-top: 5px;">Reports</div>
+        </div>
+        <div style="text-align: center; width: 15%;">
+            <CircularIconButton Icon="⚙" />
+            <div style="font-size: 0.8rem; margin-top: 5px;">Easy to Manage</div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject]
+    public NavigationManager Nav { get; set; }
+
+    private void GoToNewOrder()
+    {
+        Nav.NavigateTo("/new-order");
+    }
+}

@@ -1,0 +1,40 @@
+<button class="circular-icon-button @CssClass" @onclick="OnClick">
+    <span class="icon">@Icon</span>
+</button>
+
+<style>
+    .circular-icon-button {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-circle);
+        border: none;
+        background-color: var(--bg-card);
+        color: var(--text-dark);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .circular-icon-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .circular-icon-button .icon {
+        font-size: 1.2rem;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string Icon { get; set; } = "★"; // Default icon text/emoji
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; } = string.Empty;
+}

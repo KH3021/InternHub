@@ -1,0 +1,85 @@
+@page "/new-order/step3"
+@inject OrderDraftService DraftService
+@inject NavigationManager Nav
+
+<div class="top-bar">
+    <div>
+        <h2>Step 3: Quality</h2>
+        <div style="color: var(--text-muted)">Choose the quality / range</div>
+    </div>
+</div>
+
+<div class="page-content">
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        @foreach (var tier in qualityTiers)
+        {
+            var isSelected = DraftService.CurrentOrder.QualityTier == tier.Name;
+            <div class="card quality-row @(isSelected ? "selected" : "")" @onclick="() => SelectTier(tier.Name)">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <CircularStatusBadge ColorType="@tier.BadgeColor" />
+                    <div>
+                        <div style="font-weight: bold; font-size: 1.1rem;">@tier.Name</div>
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">@tier.Description</div>
+                    </div>
+                </div>
+                <div class="chevron">›</div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="bottom-action-bar">
+    <button class="btn btn-outline" @onclick="GoBack">Back</button>
+    <button class="btn btn-primary" @onclick="GoNext" disabled="@string.IsNullOrEmpty(DraftService.CurrentOrder.QualityTier)">Next: Features</button>
+</div>
+
+<style>
+    .quality-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+    .quality-row:hover {
+        transform: translateX(5px);
+    }
+    .quality-row.selected {
+        background-color: var(--accent-primary-light);
+        border-color: var(--accent-primary-light);
+    }
+    .chevron {
+        font-size: 1.5rem;
+        color: var(--text-muted);
+        font-weight: bold;
+    }
+    .quality-row.selected .chevron {
+        color: var(--accent-primary);
+    }
+</style>
+
+@code {
+    private List<QualityTier> qualityTiers = new()
+    {
+        new QualityTier { Name = "Regular", Description = "Good & Affordable", BadgeColor = "regular" },
+        new QualityTier { Name = "Standard", Description = "Better Clarity", BadgeColor = "standard" },
+        new QualityTier { Name = "Premium", Description = "Best Clarity & Comfort", BadgeColor = "premium" }
+    };
+
+    private void SelectTier(string tierName)
+    {
+        DraftService.CurrentOrder.QualityTier = tierName;
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/new-order/step2");
+    }
+
+    private async Task GoNext()
+    {
+        await DraftService.SaveDraftAsync();
+        Nav.NavigateTo("/new-order/step4");
+    }
+}

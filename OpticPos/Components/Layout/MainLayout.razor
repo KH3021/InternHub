@@ -1,0 +1,41 @@
+@inherits LayoutComponentBase
+
+<div class="app-layout">
+    <nav class="sidebar">
+        <div style="padding: 20px; font-weight: bold; font-size: 1.2rem;">OPTIC POS</div>
+        <div class="nav-links" style="display:flex; flex-direction:column; padding: 10px;">
+            <NavLink href="" class="nav-link" Match="NavLinkMatch.All">Dashboard</NavLink>
+            <NavLink href="new-order" class="nav-link">New Order</NavLink>
+            <NavLink href="orders" class="nav-link">Orders</NavLink>
+            <NavLink href="customers" class="nav-link">Customers</NavLink>
+            <NavLink href="pricelist" class="nav-link">Price List</NavLink>
+            <NavLink href="companies" class="nav-link">Companies</NavLink>
+            <NavLink href="reports" class="nav-link">Reports</NavLink>
+            <NavLink href="settings" class="nav-link">Settings</NavLink>
+        </div>
+        <div style="margin-top: auto; padding: 20px;">
+            <a href="#" style="color: white; text-decoration: none;">Logout</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        @Body
+    </main>
+</div>
+
+<style>
+    .nav-link {
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+    }
+    .nav-link.active {
+        color: white;
+        background: var(--accent-primary);
+    }
+    .nav-link:hover {
+        background: rgba(255,255,255,0.1);
+    }
+</style>

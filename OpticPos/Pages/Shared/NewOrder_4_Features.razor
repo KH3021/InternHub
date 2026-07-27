@@ -1,0 +1,81 @@
+@page "/new-order/step4"
+@inject OrderDraftService DraftService
+@inject NavigationManager Nav
+
+<div class="top-bar">
+    <div>
+        <h2>Step 4: Features / Coatings</h2>
+        <div style="color: var(--text-muted)">Choose one or more features</div>
+    </div>
+</div>
+
+<div class="page-content">
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px;">
+        @foreach (var feature in featuresList)
+        {
+            var isSelected = DraftService.SelectedFeatures.Contains(feature);
+            <div class="card feature-tile @(isSelected ? "selected" : "")" @onclick="() => ToggleFeature(feature)">
+                <div style="display: flex; justify-content: flex-end;">
+                    <CircularCheckToggle IsChecked="isSelected" />
+                </div>
+                <div style="text-align: center; margin-top: 10px;">
+                    <div style="font-size: 1.5rem; margin-bottom: 10px;">✨</div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">@feature</div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="bottom-action-bar">
+    <button class="btn btn-outline" @onclick="GoBack">Back</button>
+    <button class="btn btn-primary" @onclick="GoNext">Next: Company</button>
+</div>
+
+<style>
+    .feature-tile {
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        height: 120px;
+    }
+    .feature-tile:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .feature-tile.selected {
+        border-color: var(--accent-primary);
+        background-color: var(--accent-primary-light);
+    }
+</style>
+
+@code {
+    private List<string> featuresList = new()
+    {
+        "HC Hard Coat", "HMC Hard Multi Coat", "Blue Cut", "SHMC Super HMC",
+        "PG Anti Reflection", "Photochromic", "Tint", "Mirror", "Drive Safe"
+    };
+
+    private void ToggleFeature(string feature)
+    {
+        if (DraftService.SelectedFeatures.Contains(feature))
+        {
+            DraftService.SelectedFeatures.Remove(feature);
+        }
+        else
+        {
+            DraftService.SelectedFeatures.Add(feature);
+        }
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/new-order/step3");
+    }
+
+    private async Task GoNext()
+    {
+        await DraftService.SaveDraftAsync();
+        Nav.NavigateTo("/new-order/step5");
+    }
+}

@@ -1,0 +1,26 @@
+<div class="circular-status-badge" style="background-color: @GetColor();"></div>
+
+<style>
+    .circular-status-badge {
+        width: 16px;
+        height: 16px;
+        border-radius: var(--radius-circle);
+        display: inline-block;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string ColorType { get; set; } = "regular"; // regular, standard, premium
+
+    private string GetColor()
+    {
+        return ColorType.ToLower() switch
+        {
+            "regular" => "var(--accent-green)",
+            "standard" => "var(--accent-primary)",
+            "premium" => "var(--accent-gold)",
+            _ => "var(--text-muted)"
+        };
+    }
+}

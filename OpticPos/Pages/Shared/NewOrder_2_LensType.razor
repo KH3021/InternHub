@@ -1,0 +1,71 @@
+@page "/new-order/step2"
+@inject OrderDraftService DraftService
+@inject NavigationManager Nav
+
+<div class="top-bar">
+    <div>
+        <h2>Step 2: Lens Type</h2>
+        <div style="color: var(--text-muted)">Choose the type of lens</div>
+    </div>
+</div>
+
+<div class="page-content">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        @foreach (var type in lensTypes)
+        {
+            var isSelected = DraftService.CurrentOrder.LensType == type;
+            <div class="card type-tile @(isSelected ? "selected" : "")" @onclick="() => SelectType(type)">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="font-size: 2rem;">👓</div>
+                    <CircularCheckToggle IsChecked="isSelected" />
+                </div>
+                <h3 style="margin-top: 20px; margin-bottom: 0;">@type</h3>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="bottom-action-bar">
+    <button class="btn btn-outline" @onclick="GoBack">Back</button>
+    <button class="btn btn-primary" @onclick="GoNext" disabled="@string.IsNullOrEmpty(DraftService.CurrentOrder.LensType)">Next: Quality</button>
+</div>
+
+<style>
+    .type-tile {
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        height: 150px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .type-tile:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+    .type-tile.selected {
+        border-color: var(--accent-primary);
+        background-color: var(--accent-primary-light);
+    }
+</style>
+
+@code {
+    private List<string> lensTypes = new() { "Single Vision", "Bifocal", "Progressive", "Reading" };
+
+    private void SelectType(string type)
+    {
+        DraftService.CurrentOrder.LensType = type;
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/new-order/step1");
+    }
+
+    private async Task GoNext()
+    {
+        await DraftService.SaveDraftAsync();
+        Nav.NavigateTo("/new-order/step3");
+    }
+}

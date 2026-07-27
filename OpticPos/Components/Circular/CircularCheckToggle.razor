@@ -1,0 +1,36 @@
+<div class="circular-check-toggle @(IsChecked ? "checked" : "")">
+    @if (IsChecked)
+    {
+        <span class="check-icon">✓</span>
+    }
+</div>
+
+<style>
+    .circular-check-toggle {
+        width: 24px;
+        height: 24px;
+        border-radius: var(--radius-circle);
+        border: 2px solid var(--border-light);
+        background-color: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    
+    .circular-check-toggle.checked {
+        background-color: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: white;
+    }
+    
+    .check-icon {
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool IsChecked { get; set; }
+}

@@ -1,0 +1,84 @@
+@page "/new-order/step5"
+@inject OrderDraftService DraftService
+@inject LocalDbService DbService
+@inject NavigationManager Nav
+
+<div class="top-bar">
+    <div>
+        <h2>Step 5: Company</h2>
+        <div style="color: var(--text-muted)">Choose the lens company</div>
+    </div>
+</div>
+
+<div class="page-content">
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        @if (companies == null)
+        {
+            <p>Loading companies...</p>
+        }
+        else
+        {
+            @foreach (var company in companies)
+            {
+                var isSelected = DraftService.SelectedCompany?.Id == company.Id;
+                <div class="card company-row @(isSelected ? "selected" : "")" @onclick="() => SelectCompany(company)">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <CircularAvatar Text="@company.LogoUrl" />
+                        <div style="font-weight: bold; font-size: 1.1rem;">@company.Name</div>
+                    </div>
+                    <CircularCheckToggle IsChecked="isSelected" />
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="bottom-action-bar">
+    <button class="btn btn-outline" @onclick="GoBack">Back</button>
+    <button class="btn btn-primary" @onclick="GoNext" disabled="@(DraftService.SelectedCompany == null)">Next: Product</button>
+</div>
+
+<style>
+    .company-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+    .company-row:hover {
+        transform: translateX(5px);
+    }
+    .company-row.selected {
+        background-color: var(--accent-primary-light);
+        border-color: var(--accent-primary-light);
+    }
+</style>
+
+@code {
+    private List<Company> companies;
+
+    protected override async Task OnInitializedAsync()
+    {
+        companies = await DbService.GetCompaniesAsync();
+    }
+
+    private void SelectCompany(Company company)
+    {
+        DraftService.SelectedCompany = company;
+        // Reset selected product when company changes
+        DraftService.SelectedProduct = null;
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/new-order/step4");
+    }
+
+    private async Task GoNext()
+    {
+        await DraftService.SaveDraftAsync();
+        Nav.NavigateTo("/new-order/step6");
+    }
+}

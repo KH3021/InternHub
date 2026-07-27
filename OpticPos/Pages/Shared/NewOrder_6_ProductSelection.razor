@@ -1,0 +1,152 @@
+@page "/new-order/step6"
+@inject OrderDraftService DraftService
+@inject LocalDbService DbService
+@inject NavigationManager Nav
+
+<div class="top-bar">
+    <div>
+        <h2>Step 6: Product Selection</h2>
+        <div style="color: var(--text-muted)">Available products from @(DraftService.SelectedCompany?.Name ?? "Selected Company")</div>
+    </div>
+</div>
+
+<div class="page-content">
+    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+        <select class="filter-dropdown" @bind="selectedType">
+            <option value="">All Type</option>
+            <option value="SV">SV</option>
+            <option value="Bifocal">Bifocal</option>
+            <option value="Progressive">Progressive</option>
+        </select>
+        <select class="filter-dropdown" @bind="selectedIndex">
+            <option value="">All Index</option>
+            <option value="1.50">1.50</option>
+            <option value="1.56">1.56</option>
+            <option value="1.61">1.61</option>
+            <option value="1.67">1.67</option>
+        </select>
+        <select class="filter-dropdown" @bind="selectedCoating">
+            <option value="">All Coating</option>
+            <option value="HMC">HMC</option>
+            <option value="SHMC">SHMC</option>
+        </select>
+        <button class="btn btn-outline" style="padding: 10px;" @onclick="FilterProducts">Filter 🔍</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        @if (filteredProducts == null)
+        {
+            <p>Loading products...</p>
+        }
+        else if (!filteredProducts.Any())
+        {
+            <p>No products found for the selected filters.</p>
+        }
+        else
+        {
+            @foreach (var product in filteredProducts)
+            {
+                var isSelected = DraftService.SelectedProduct?.Id == product.Id;
+                <div class="card product-row @(isSelected ? "selected" : "")" @onclick="() => SelectProduct(product)">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <CircularAvatar Text="@DraftService.SelectedCompany?.LogoUrl" />
+                        <div>
+                            <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">@product.Name</div>
+                            <div style="display: flex; gap: 10px;">
+                                <span class="tag-chip">@product.Type</span>
+                                <span class="tag-chip">@product.Index</span>
+                                <span class="tag-chip">@product.Coating</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <div style="font-weight: bold; color: var(--accent-primary);">₹@product.Price.ToString("N0") <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">/ Per Pair</span></div>
+                        <CircularCheckToggle IsChecked="isSelected" />
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="bottom-action-bar">
+    <button class="btn btn-outline" @onclick="GoBack">Back</button>
+    <button class="btn btn-primary" @onclick="GoNext" disabled="@(DraftService.SelectedProduct == null)">Next: Preview Order</button>
+</div>
+
+<style>
+    .filter-dropdown {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+        background-color: var(--bg-card);
+        outline: none;
+    }
+    .product-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+    .product-row:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .product-row.selected {
+        border-color: var(--accent-primary);
+        background-color: var(--accent-primary-light);
+    }
+    .tag-chip {
+        background-color: var(--bg-app);
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+</style>
+
+@code {
+    private List<Product> allProducts = new();
+    private List<Product> filteredProducts = new();
+    
+    private string selectedType = "";
+    private string selectedIndex = "";
+    private string selectedCoating = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (DraftService.SelectedCompany != null)
+        {
+            allProducts = await DbService.GetProductsAsync(DraftService.SelectedCompany.Id);
+            FilterProducts();
+        }
+    }
+
+    private void FilterProducts()
+    {
+        filteredProducts = allProducts.Where(p => 
+            (string.IsNullOrEmpty(selectedType) || p.Type == selectedType) &&
+            (string.IsNullOrEmpty(selectedIndex) || p.Index == selectedIndex) &&
+            (string.IsNullOrEmpty(selectedCoating) || p.Coating == selectedCoating)
+        ).ToList();
+    }
+
+    private void SelectProduct(Product product)
+    {
+        DraftService.SelectedProduct = product;
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/new-order/step5");
+    }
+
+    private async Task GoNext()
+    {
+        await DraftService.SaveDraftAsync();
+        Nav.NavigateTo("/new-order/step7");
+    }
+}
