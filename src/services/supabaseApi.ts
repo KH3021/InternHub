@@ -164,23 +164,11 @@ export const applicationService = {
 
     let finalJobId = jobId;
 
-    // If using dummy data, we must upsert a dummy job into Supabase first to pass the foreign key constraint
+    // If using dummy data, we do not want to hit Supabase because Candidates don't have permission to create jobs
     if (!isValidUUID(jobId)) {
-      finalJobId = getDummyUuid(jobId);
-      
-      const dummyJob = {
-        id: finalJobId,
-        title: jobTitle || 'Featured Position',
-        company_name: companyName || 'Company',
-        job_type: jobId.startsWith('intern') ? 'internship' : 'full-time',
-        location: 'Remote',
-        salary: 'Varies',
-        work_mode: 'Remote'
-      };
-
-      // Silently upsert dummy job. If this fails due to missing company_id schema etc, the insert below might fail,
-      // but this is the best effort to persist dummy applications natively in Supabase.
-      await supabase.from('jobs').upsert(dummyJob, { onConflict: 'id' }).maybeSingle();
+      // Simulate network delay
+      await new Promise(r => setTimeout(r, 600));
+      return { success: true, data: { id: 'dummy-app', job_id: jobId, status: 'applied' } };
     }
 
     const payload: any = {
