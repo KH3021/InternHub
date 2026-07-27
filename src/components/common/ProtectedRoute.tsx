@@ -28,6 +28,10 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
 
   // Not logged in → send to login, preserving intended destination
   if (!isAuthenticated) {
+    // Prevent redirecting to login if we are in the middle of an OAuth redirect (Supabase is parsing the hash)
+    if (window.location.hash.includes('access_token=')) {
+      return <AuthLoader />;
+    }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
