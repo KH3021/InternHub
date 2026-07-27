@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Briefcase, Bookmark, FileText, CheckCircle2, Clock, Download, ExternalLink, MapPin, GraduationCap, Code2, PlusCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { applicationService, jobService, profileService } from '../../services/supabaseApi';
-import { featuredJobs, featuredInternships } from '../../data/dummyData';
 
 export default function CandidateDashboard() {
   const { user } = useAuth();
@@ -37,15 +36,6 @@ export default function CandidateDashboard() {
       return {
         title: app.jobs.title,
         company: app.jobs.companies?.name || app.jobs.company_name || 'Company',
-      };
-    }
-
-    // Try finding in dummy featured jobs / internships
-    const matchedJob = featuredJobs.find((j) => j.id === app.job_id) || featuredInternships.find((i) => i.id === app.job_id);
-    if (matchedJob) {
-      return {
-        title: matchedJob.title,
-        company: matchedJob.companyName,
       };
     }
 

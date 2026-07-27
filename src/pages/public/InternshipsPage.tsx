@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, CheckCircle2 } from 'lucide-react';
 import InternshipCard from '../../components/common/InternshipCard';
-import { featuredInternships } from '../../data/dummyData';
 import { useAuth } from '../../hooks/useAuth';
 import { applicationService, jobService } from '../../services/supabaseApi';
+import type { Internship } from '../../types/portal.types';
 
 export default function InternshipsPage() {
   const navigate = useNavigate();
@@ -14,6 +14,15 @@ export default function InternshipsPage() {
   const [workMode, setWorkMode] = useState<string>('All');
   const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string>('');
+  const [internships, setInternships] = useState<Internship[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    jobService.getFeaturedInternships().then((data) => {
+      setInternships(data);
+      setIsLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (user?.id) {
@@ -30,7 +39,7 @@ export default function InternshipsPage() {
       return;
     }
 
-    const internship = featuredInternships.find((i) => i.id === internshipId);
+    const internship = internships.find((i) => i.id === internshipId);
     const { success, error } = await applicationService.applyForJob(
       user.id,
       internshipId,
@@ -57,7 +66,7 @@ export default function InternshipsPage() {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
-  const filtered = featuredInternships.filter((intern) => {
+  const filtered = internships.filter((intern) => {
     const matchesQuery = intern.title.toLowerCase().includes(query.toLowerCase()) || intern.companyName.toLowerCase().includes(query.toLowerCase());
     const matchesWorkMode = workMode === 'All' || intern.workMode === workMode;
     return matchesQuery && matchesWorkMode;
@@ -104,26 +113,36 @@ export default function InternshipsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map((internship) => {
-          const isApplied = appliedJobIds.includes(internship.id);
-          return (
-            <div key={internship.id} className="relative">
-              <InternshipCard
-                internship={internship}
-                onApply={handleApply}
-                onSave={handleSave}
-              />
-              {isApplied && (
-                <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
-                  <CheckCircle2 className="h-3 w-3" />
-                  <span>Applied</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {isLoading ? (
+        <div className="py-20 flex justify-center">
+          <div className="h-8 w-8 rounded-full border-4 border-indigo-500/30 border-t-indigo-600 animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="py-20 text-center text-slate-500 dark:text-slate-400">
+          No internships found matching your criteria.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((internship) => {
+            const isApplied = appliedJobIds.includes(internship.id);
+            return (
+              <div key={internship.id} className="relative">
+                <InternshipCard
+                  internship={internship}
+                  onApply={handleApply}
+                  onSave={handleSave}
+                />
+                {isApplied && (
+                  <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>Applied</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

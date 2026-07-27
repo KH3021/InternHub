@@ -143,19 +143,6 @@ export const companyService = {
 // ============================================================================
 // 4. APPLICATIONS (Table: applications)
 // ============================================================================
-// Helper to map dummy 'job-1' or 'intern-1' to valid UUIDs
-function getDummyUuid(dummyId: string): string {
-  if (dummyId.startsWith('job-')) {
-    const num = dummyId.split('-')[1];
-    return `00000000-0000-0000-0000-${num.padStart(12, '0')}`;
-  }
-  if (dummyId.startsWith('intern-')) {
-    const num = dummyId.split('-')[1];
-    return `11111111-0000-0000-0000-${num.padStart(12, '0')}`;
-  }
-  return dummyId;
-}
-
 export const applicationService = {
   async applyForJob(candidateId: string, jobId: string, jobTitle?: string, companyName?: string, coverLetter?: string, resumeUrl?: string) {
     if (!isValidUUID(candidateId)) {
@@ -163,13 +150,6 @@ export const applicationService = {
     }
 
     let finalJobId = jobId;
-
-    // If using dummy data, we do not want to hit Supabase because Candidates don't have permission to create jobs
-    if (!isValidUUID(jobId)) {
-      // Simulate network delay
-      await new Promise(r => setTimeout(r, 600));
-      return { success: true, data: { id: 'dummy-app', job_id: jobId, status: 'applied' } };
-    }
 
     const payload: any = {
       job_id: finalJobId,

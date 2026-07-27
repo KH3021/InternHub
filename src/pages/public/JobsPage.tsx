@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, CheckCircle2, AlertCircle } from 'lucide-react';
 import JobCard from '../../components/common/JobCard';
-import { featuredJobs } from '../../data/dummyData';
 import { useAuth } from '../../hooks/useAuth';
 import { applicationService, jobService } from '../../services/supabaseApi';
+import type { Job } from '../../types/portal.types';
 
 export default function JobsPage() {
   const navigate = useNavigate();
@@ -14,6 +14,15 @@ export default function JobsPage() {
   const [workMode, setWorkMode] = useState<string>('All');
   const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string>('');
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    jobService.getFeaturedJobs().then((data) => {
+      setJobs(data);
+      setIsLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (user?.id) {
@@ -30,7 +39,7 @@ export default function JobsPage() {
       return;
     }
 
-    const job = featuredJobs.find((j) => j.id === jobId);
+    const job = jobs.find((j) => j.id === jobId);
     const { success, error } = await applicationService.applyForJob(
       user.id,
       jobId,
@@ -57,7 +66,7 @@ export default function JobsPage() {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
-  const filtered = featuredJobs.filter((job) => {
+  const filtered = jobs.filter((job) => {
     const matchesQuery = job.title.toLowerCase().includes(query.toLowerCase()) || job.companyName.toLowerCase().includes(query.toLowerCase());
     const matchesWorkMode = workMode === 'All' || job.workMode === workMode;
     return matchesQuery && matchesWorkMode;
@@ -109,26 +118,36 @@ export default function JobsPage() {
       </div>
 
       {/* Jobs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map((job) => {
-          const isApplied = appliedJobIds.includes(job.id);
-          return (
-            <div key={job.id} className="relative">
-              <JobCard
-                job={job}
-                onApply={handleApply}
-                onSave={handleSave}
-              />
-              {isApplied && (
-                <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
-                  <CheckCircle2 className="h-3 w-3" />
-                  <span>Applied</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {isLoading ? (
+        <div className="py-20 flex justify-center">
+          <div className="h-8 w-8 rounded-full border-4 border-primary-500/30 border-t-primary-600 animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="py-20 text-center text-slate-500 dark:text-slate-400">
+          No jobs found matching your criteria.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((job) => {
+            const isApplied = appliedJobIds.includes(job.id);
+            return (
+              <div key={job.id} className="relative">
+                <JobCard
+                  job={job}
+                  onApply={handleApply}
+                  onSave={handleSave}
+                />
+                {isApplied && (
+                  <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>Applied</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
     </div>
   );
