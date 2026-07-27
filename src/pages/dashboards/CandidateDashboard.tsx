@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Briefcase, Bookmark, FileText, CheckCircle2, Clock, Download, ExternalLink, MapPin, GraduationCap, Code2, PlusCircle } from 'lucide-react';
+import { Briefcase, Bookmark, FileText, CheckCircle2, Clock, Download, ExternalLink, MapPin, GraduationCap, Code2, PlusCircle, Upload, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { applicationService, jobService, profileService } from '../../services/supabaseApi';
 
@@ -10,19 +10,23 @@ export default function CandidateDashboard() {
   const path = location.pathname;
   const [applications, setApplications] = useState<any[]>([]);
   const [candidateProfile, setCandidateProfile] = useState<any>(null);
-  const [savedCount, setSavedCount] = useState(0);
+  const [savedJobs, setSavedJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Resume State
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
+  const [resumeError, setResumeError] = useState('');
 
   useEffect(() => {
     if (user?.id) {
       setLoading(true);
       Promise.all([
         applicationService.getCandidateApplications(user.id),
-        jobService.getSavedJobIds(user.id),
+        jobService.getSavedJobs(user.id),
         profileService.getCandidateProfile(user.id),
-      ]).then(([appsData, savedIds, profileData]) => {
+      ]).then(([appsData, savedJobsData, profileData]) => {
         setApplications(appsData);
-        setSavedCount(savedIds.length);
+        setSavedJobs(savedJobsData);
         setCandidateProfile(profileData);
         setLoading(false);
       }).catch(() => setLoading(false));
@@ -30,6 +34,40 @@ export default function CandidateDashboard() {
   }, [user]);
 
   const shortlistedCount = applications.filter((a) => a.status === 'shortlisted').length;
+  const savedCount = savedJobs.length;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    
+    if (file.size > 500 * 1024) {
+      setResumeError(`File exceeds 500 KB limit.`);
+      return;
+    }
+    
+    setResumeError('');
+    setIsUploadingResume(true);
+    
+    const { url, error } = await profileService.uploadResume(user.id, file);
+    if (error) {
+      setResumeError(error);
+    } else if (url) {
+      await profileService.saveProfile(user.id, { resumeUrl: url });
+      setCandidateProfile({ ...candidateProfile, resumeUrl: url });
+    }
+    setIsUploadingResume(false);
+  };
+
+  const handleDeleteResume = async () => {
+    if (!user?.id || !candidateProfile?.resumeUrl) return;
+    
+    if (window.confirm('Are you sure you want to delete your resume?')) {
+      setIsUploadingResume(true);
+      await profileService.deleteResume(user.id, candidateProfile.resumeUrl);
+      setCandidateProfile({ ...candidateProfile, resumeUrl: '' });
+      setIsUploadingResume(false);
+    }
+  };
 
   // Helper to resolve job title & company for application
   const getJobDetailsForApp = (app: any) => {
@@ -104,6 +142,51 @@ export default function CandidateDashboard() {
       )}
 
         </>
+      )}
+
+      {path === '/dashboard/profile' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+          <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-4">Resume Management</h3>
+          
+          {candidateProfile?.resumeUrl ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl gap-4">
+               <div className="flex items-center gap-3">
+                 <div className="h-12 w-12 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 flex items-center justify-center rounded-xl shrink-0">
+                    <CheckCircle2 className="h-6 w-6" />
+                 </div>
+                 <div>
+                   <div className="text-sm font-bold text-emerald-800 dark:text-emerald-200">Resume Uploaded Successfully</div>
+                   <a href={candidateProfile.resumeUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1 mt-0.5">
+                     <span>View Current Resume</span>
+                     <ExternalLink className="h-3 w-3" />
+                   </a>
+                 </div>
+               </div>
+               <button onClick={handleDeleteResume} disabled={isUploadingResume} className="px-4 py-2 bg-white dark:bg-slate-800 text-rose-600 border border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50">
+                 {isUploadingResume ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                 <span>Delete Resume</span>
+               </button>
+            </div>
+          ) : (
+            <div className="p-8 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-center border-dashed">
+               <Upload className="h-10 w-10 mx-auto text-primary-400 mb-3" />
+               <div className="text-sm font-bold text-slate-700 dark:text-slate-300">You haven't uploaded a resume yet!</div>
+               <p className="text-xs font-medium text-slate-500 max-w-sm mx-auto mb-5 mt-1">Upload your CV to increase your chances of being shortlisted by recruiters.</p>
+               
+               <input type="file" id="dashboardResume" accept=".pdf,.doc,.docx" onChange={handleFileUpload} className="hidden" />
+               <label htmlFor="dashboardResume" className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-xl cursor-pointer shadow-md transition-colors">
+                 {isUploadingResume ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                 <span>{isUploadingResume ? 'Uploading...' : 'Browse File to Upload'}</span>
+               </label>
+               {resumeError && (
+                 <div className="mt-4 flex items-center justify-center gap-1.5 text-xs font-bold text-rose-500">
+                   <AlertCircle className="h-4 w-4" />
+                   <span>{resumeError}</span>
+                 </div>
+               )}
+            </div>
+          )}
+        </div>
       )}
 
       {path === '/dashboard' && (
@@ -223,13 +306,49 @@ export default function CandidateDashboard() {
       )}
 
       {path === '/dashboard/saved' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-8 rounded-3xl text-center shadow-sm">
-          <Bookmark className="h-12 w-12 mx-auto text-primary-500 mb-4" />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Saved Jobs</h2>
-          <p className="text-slate-500 text-sm mt-2">You have {savedCount} saved jobs. Detailed view coming soon.</p>
-          <Link to="/jobs" className="mt-4 inline-block px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-sm transition-colors">
-            Browse More Jobs
-          </Link>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">My Saved Jobs</h3>
+            <span className="px-3 py-1 bg-primary-100 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-full">{savedCount} Total</span>
+          </div>
+          
+          {savedJobs.length === 0 ? (
+             <div className="text-center py-10 space-y-3">
+               <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                 <Bookmark className="h-6 w-6" />
+               </div>
+               <div className="text-sm font-bold text-slate-700 dark:text-slate-300">No saved jobs yet</div>
+               <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                 Browse our jobs and internships and click the bookmark icon to save them for later.
+               </p>
+               <Link to="/jobs" className="mt-2 inline-block px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-xl shadow-md transition-all">
+                 Browse More Jobs
+               </Link>
+             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {savedJobs.map((saved: any) => {
+                const job = saved.jobs;
+                if (!job) return null;
+                const companyName = job.companies?.name || job.company_name || 'Company';
+                return (
+                  <Link key={saved.id} to={`/jobs/${job.id}`} className="block p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-primary-500 transition-colors shadow-sm relative group">
+                    <div className="absolute top-4 right-4 text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink className="h-4 w-4" />
+                    </div>
+                    <div className="flex justify-between items-start mb-2 pr-6">
+                      <h4 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{job.title}</h4>
+                    </div>
+                    <div className="text-xs text-slate-500 font-semibold mb-3">{companyName}</div>
+                    <div className="flex items-center gap-2 text-[10px] font-bold">
+                       <span className="px-2 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-md truncate max-w-[120px]">{job.location || 'Remote'}</span>
+                       <span className="text-emerald-600 dark:text-emerald-400 truncate">{job.salary || 'Competitive'}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

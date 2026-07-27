@@ -90,7 +90,7 @@ export const jobService = {
     if (!isValidUUID(userId)) return true;
     const { error } = await supabase
       .from('saved_jobs')
-      .insert({ user_id: userId, job_id: jobId });
+      .insert({ candidate_id: userId, job_id: jobId });
     return !error;
   },
 
@@ -99,7 +99,7 @@ export const jobService = {
     const { error } = await supabase
       .from('saved_jobs')
       .delete()
-      .eq('user_id', userId)
+      .eq('candidate_id', userId)
       .eq('job_id', jobId);
     return !error;
   },
@@ -109,8 +109,22 @@ export const jobService = {
     const { data } = await supabase
       .from('saved_jobs')
       .select('job_id')
-      .eq('user_id', userId);
+      .eq('candidate_id', userId);
     return data ? data.map((row: any) => row.job_id) : [];
+  },
+
+  async getSavedJobs(userId: string) {
+    if (!isValidUUID(userId)) return [];
+    const { data, error } = await supabase
+      .from('saved_jobs')
+      .select('*, jobs(*, companies(name))')
+      .eq('candidate_id', userId)
+      .order('saved_at', { ascending: false });
+    
+    if (error) {
+      console.warn('Error fetching saved jobs:', error.message);
+    }
+    return data || [];
   },
 
   async createJob(jobData: any): Promise<{ success: boolean; data?: any; error?: string }> {
@@ -387,9 +401,25 @@ export const profileService = {
       const { data: publicUrlData } = supabase.storage.from('resumes').getPublicUrl(filePath);
       return { url: publicUrlData.publicUrl, error: null };
     } catch (e: any) {
-      return { url: null, error: e.message || 'Error uploading file.' };
+      return { url: null, error: e.message };
     }
   },
+
+  async deleteResume(userId: string, resumeUrl: string) {
+    if (!isValidUUID(userId) || !resumeUrl) return;
+    try {
+      // Remove from storage if possible
+      const urlParts = resumeUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      if (fileName) {
+        await supabase.storage.from('resumes').remove([fileName]);
+      }
+      // Remove from profile
+      await supabase.from('users').update({ resume_url: '' }).eq('id', userId);
+    } catch (e: any) {
+      console.warn('Error deleting resume:', e.message);
+    }
+  }
 };
 
 // ============================================================================
