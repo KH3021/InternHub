@@ -271,15 +271,16 @@ export default function CandidateWizard() {
 
               <input
                 type="file"
+                id="resumeUpload"
                 ref={fileInputRef}
                 accept=".pdf,.doc,.docx"
                 onChange={handleFileChange}
                 className="hidden"
               />
 
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${
+              <label
+                htmlFor="resumeUpload"
+                className={`block border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${
                   resumeError
                     ? 'border-rose-400 bg-rose-50/50 dark:bg-rose-950/20'
                     : resumeFile || resumeUrl
@@ -305,7 +306,7 @@ export default function CandidateWizard() {
                     <div className="text-xs">Supports PDF, DOCX (Must be under 500 KB)</div>
                   </div>
                 )}
-              </div>
+              </label>
 
               {resumeError && (
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 mt-2 bg-rose-50 dark:bg-rose-950/30 p-2.5 rounded-xl border border-rose-200 dark:border-rose-800">
