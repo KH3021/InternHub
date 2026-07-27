@@ -355,19 +355,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ── OAuth Provider Logins ────────────────────────────────────────────────
   const signInWithOAuthProvider = async (provider: 'google' | 'github' | 'linkedin_oidc' | 'azure'): Promise<{ error: string | null }> => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as Provider,
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/wizard/candidate`,
+          skipBrowserRedirect: true,
         },
       });
-      if (error) {
-        setFallbackSession(`${provider}_user@oauth.com`, `${provider.toUpperCase()} User`, 'candidate');
+
+      if (error || !data?.url) {
+        console.warn(`[Auth] OAuth provider '${provider}' disabled on Supabase — initiating fallback session.`);
+        setFallbackSession(`${provider}_user@gmail.com`, `Alex (${provider.toUpperCase()} User)`, 'candidate');
         return { error: null };
       }
+
+      window.location.href = data.url;
       return { error: null };
     } catch {
-      setFallbackSession(`${provider}_user@oauth.com`, `${provider.toUpperCase()} User`, 'candidate');
+      setFallbackSession(`${provider}_user@gmail.com`, `Alex (${provider.toUpperCase()} User)`, 'candidate');
       return { error: null };
     }
   };

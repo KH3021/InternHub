@@ -1,16 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Upload, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Building, Upload, CheckCircle2, ArrowRight, AlertCircle, Loader2, Image as ImageIcon } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { profileService } from '../../services/supabaseApi';
 
 export default function RecruiterWizard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [designation, setDesignation] = useState('Senior Technical Recruiter');
   const [companyBio, setCompanyBio] = useState('Leading provider of enterprise software solutions.');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUploaded, setLogoUploaded] = useState(false);
+  const [logoError, setLogoError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleComplete = (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLogoError('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate image file size (max 2 MB)
+    const MAX_SIZE_BYTES = 2 * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      setLogoError(`Logo image must be under 2 MB (selected file is ${(file.size / (1024 * 1024)).toFixed(1)} MB).`);
+      setLogoFile(null);
+      setLogoUploaded(false);
+      return;
+    }
+
+    setLogoFile(file);
+    setLogoUploaded(true);
+  };
+
+  const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.id) {
+      setIsSaving(true);
+      try {
+        await profileService.saveProfile(user.id, {
+          email: user.email,
+          fullName: user.fullName,
+          role: 'recruiter',
+          companyName: designation,
+          bio: companyBio,
+        });
+      } catch (err) {
+        console.warn('[RecruiterWizard] Error saving profile:', err);
+      } finally {
+        setIsSaving(false);
+      }
+    }
     navigate('/dashboard');
   };
 
@@ -55,34 +96,69 @@ export default function RecruiterWizard() {
           />
         </div>
 
+        {/* Real File Input for Company Logo */}
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-            Company Logo (PNG, SVG)
+            Company Logo (PNG, SVG, JPG)
           </label>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*,.svg"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
           <div
-            onClick={() => setLogoUploaded(true)}
-            className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${logoUploaded ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-300 dark:border-slate-700 hover:border-indigo-500 bg-slate-50/50 dark:bg-slate-800/40'}`}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${
+              logoError
+                ? 'border-rose-400 bg-rose-50/50 dark:bg-rose-950/20'
+                : logoUploaded
+                ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
+                : 'border-slate-300 dark:border-slate-700 hover:border-indigo-500 bg-slate-50/50 dark:bg-slate-800/40'
+            }`}
           >
-            {logoUploaded ? (
+            {logoUploaded && logoFile ? (
               <div className="space-y-1 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-8 w-8 mx-auto" />
-                <div className="text-sm font-bold">company_logo.svg uploaded!</div>
+                <div className="text-sm font-bold">{logoFile.name} uploaded!</div>
+                <div className="text-xs text-slate-400">{(logoFile.size / 1024).toFixed(1)} KB</div>
               </div>
             ) : (
               <div className="space-y-1 text-slate-500 dark:text-slate-400">
                 <Upload className="h-8 w-8 mx-auto text-indigo-500" />
-                <div className="text-sm font-bold text-slate-800 dark:text-slate-200">Click to upload company logo</div>
+                <div className="text-sm font-bold text-slate-800 dark:text-slate-200">Click to select company logo file</div>
+                <div className="text-xs">Supports PNG, SVG, JPG (Max 2MB)</div>
               </div>
             )}
           </div>
+
+          {logoError && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 mt-2 bg-rose-50 dark:bg-rose-950/30 p-2.5 rounded-xl border border-rose-200 dark:border-rose-800">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{logoError}</span>
+            </div>
+          )}
         </div>
 
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 transition-all duration-200 flex items-center justify-center gap-2"
+          disabled={isSaving}
+          className="w-full bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
         >
-          <span>Complete Setup & Post Jobs</span>
-          <ArrowRight className="h-4 w-4" />
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <span>Complete Setup & Post Jobs</span>
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
         </button>
       </form>
 

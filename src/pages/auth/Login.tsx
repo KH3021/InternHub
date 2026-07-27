@@ -123,11 +123,15 @@ export default function Login() {
     navigate(from, { replace: true });
   };
 
-  // Handle Social Login (Google, LinkedIn, GitHub, Microsoft)
+  // Handle Social Login (Google, LinkedIn, GitHub)
   const handleOAuthLogin = async (provider: 'google' | 'github' | 'linkedin_oidc' | 'azure') => {
     setError('');
     const { error: err } = await signInWithOAuthProvider(provider);
-    if (err) setError(err);
+    if (err) {
+      setError(err);
+      return;
+    }
+    navigate('/wizard/candidate', { replace: true });
   };
 
   // Complete MFA
