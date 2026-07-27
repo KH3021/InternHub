@@ -410,26 +410,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        const isRateLimitOrServerError =
-          error.status === 500 ||
-          error.status === 429 ||
-          error.name === 'AuthRetryableFetchError' ||
-          error.message === '{}' ||
-          error.message.toLowerCase().includes('rate limit');
-
-        if (isRateLimitOrServerError) {
-          console.warn('[Auth] Rate limit or server error encountered — creating local session.');
-          setFallbackSession(data.email, data.fullName, data.role);
-          setShowWelcomeTour(true);
-          setIsLoading(false);
-          return { error: null, emailSent: false };
-        }
         setIsLoading(false);
         return { error: formatAuthError(error) };
       }
 
       if (authData.user) {
-        // Phase 2: always try to insert the public.users row
+        // Save pending user so that we can sync the profile when they verify their email
+        localStorage.setItem('pendingUser', JSON.stringify({
+          email: data.email,
+          fullName: data.fullName,
+          role: data.role
+        }));
+
+        // Try to insert the public.users row immediately if possible
         await insertUserProfile(
           authData.user.id,
           data.email,
@@ -438,33 +431,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           authData.session?.access_token
         );
 
-        setUser({
-          id: authData.user.id,
-          email: data.email,
-          fullName: data.fullName,
-          role: data.role,
-          profileCompleted: false,
-        });
-
         if (authData.session) {
+          // Email confirmation disabled, log in immediately
+          setUser({
+            id: authData.user.id,
+            email: data.email,
+            fullName: data.fullName,
+            role: data.role,
+            profileCompleted: false,
+          });
           setSession(authData.session);
+          setShowWelcomeTour(true);
+          setIsLoading(false);
+          return { error: null, emailSent: false };
         } else {
-          setFallbackSession(data.email, data.fullName, data.role);
+          // Email confirmation required (session is null)
+          setIsLoading(false);
+          return { error: null, emailSent: true };
         }
-
-        setShowWelcomeTour(true);
-        setIsLoading(false);
-        return { error: null, emailSent: false };
       }
 
-      setShowWelcomeTour(true);
       setIsLoading(false);
-      return { error: null, emailSent: false };
-    } catch (e) {
-      setFallbackSession(data.email, data.fullName, data.role);
-      setShowWelcomeTour(true);
+      return { error: null, emailSent: true };
+    } catch (e: any) {
       setIsLoading(false);
-      return { error: null, emailSent: false };
+      return { error: formatAuthError(e) };
     }
   };
 
