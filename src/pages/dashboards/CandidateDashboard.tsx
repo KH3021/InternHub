@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Briefcase, Bookmark, FileText, CheckCircle2, Clock, Download, ExternalLink, MapPin, GraduationCap, Code2, PlusCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { applicationService, jobService, profileService } from '../../services/supabaseApi';
 
 export default function CandidateDashboard() {
   const { user } = useAuth();
+  const location = useLocation();
+  const path = location.pathname;
   const [applications, setApplications] = useState<any[]>([]);
   const [candidateProfile, setCandidateProfile] = useState<any>(null);
   const [savedCount, setSavedCount] = useState(0);
@@ -48,8 +50,10 @@ export default function CandidateDashboard() {
   return (
     <div className="space-y-6">
       
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-primary-600 via-indigo-600 to-primary-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {(path === '/dashboard' || path === '/dashboard/profile') && (
+        <>
+          {/* Top Banner */}
+          <div className="bg-gradient-to-r from-primary-600 via-indigo-600 to-primary-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="max-w-xl space-y-2">
           <h2 className="text-2xl sm:text-3xl font-black">
             Welcome back, {candidateProfile?.fullName || user?.fullName || 'Candidate'}! 👋
@@ -99,8 +103,13 @@ export default function CandidateDashboard() {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        </>
+      )}
+
+      {path === '/dashboard' && (
+        <>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4">
           <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
             <FileText className="h-6 w-6" />
@@ -142,8 +151,12 @@ export default function CandidateDashboard() {
         </div>
       </div>
 
-      {/* Applications List Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+        </>
+      )}
+
+      {(path === '/dashboard' || path === '/dashboard/applications') && (
+        {/* Applications List Table */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">My Submitted Applications</h3>
           <Link to="/jobs" className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
@@ -207,6 +220,18 @@ export default function CandidateDashboard() {
           </div>
         )}
       </div>
+      )}
+
+      {path === '/dashboard/saved' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-8 rounded-3xl text-center shadow-sm">
+          <Bookmark className="h-12 w-12 mx-auto text-primary-500 mb-4" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Saved Jobs</h2>
+          <p className="text-slate-500 text-sm mt-2">You have {savedCount} saved jobs. Detailed view coming soon.</p>
+          <Link to="/jobs" className="mt-4 inline-block px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-sm transition-colors">
+            Browse More Jobs
+          </Link>
+        </div>
+      )}
 
     </div>
   );
