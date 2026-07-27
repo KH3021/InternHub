@@ -217,11 +217,14 @@ export const applicationService = {
 
     const { data, error } = await supabase
       .from('applications')
-      .select('*, jobs(*)')
+      .select('*, jobs(*, companies(name))')
       .eq('candidate_id', candidateId)
-      .order('created_at', { ascending: false });
+      .order('applied_at', { ascending: false });
 
-    if (error || !data) return [];
+    if (error || !data) {
+      console.warn('[ApplicationService] Error fetching apps:', error?.message);
+      return [];
+    }
     
     return data;
   },
@@ -267,12 +270,32 @@ export const profileService = {
   async saveProfile(userId: string, profileData: any) {
     if (!isValidUUID(userId)) return true;
 
-    // 1. Ensure user row exists in public.users
+    // We only have public.users table for profiles now
     const userPayload: any = { id: userId };
+    
     if (profileData.fullName) userPayload.full_name = profileData.fullName;
     if (profileData.email) userPayload.email = profileData.email;
     if (profileData.role) userPayload.role = profileData.role;
     if (profileData.phone) userPayload.phone = profileData.phone;
+    
+    if (profileData.bio !== undefined) userPayload.bio = profileData.bio;
+    if (profileData.preferredLocation || profileData.location) userPayload.location = profileData.preferredLocation || profileData.location;
+    if (profileData.resumeUrl !== undefined) userPayload.resume_url = profileData.resumeUrl;
+    
+    if (Array.isArray(profileData.skills)) userPayload.skills = profileData.skills;
+    
+    // Convert string inputs to JSON arrays if necessary for the schema
+    if (profileData.education) {
+      userPayload.education = Array.isArray(profileData.education) 
+        ? profileData.education 
+        : [{ institution: profileData.education }];
+    }
+    
+    if (profileData.experienceYears) {
+      userPayload.experience = Array.isArray(profileData.experienceYears)
+        ? profileData.experienceYears
+        : [{ title: `${profileData.experienceYears} Years Experience` }];
+    }
 
     const { error: userErr } = await supabase
       .from('users')
@@ -280,67 +303,30 @@ export const profileService = {
 
     if (userErr) {
       console.warn('[ProfileService] Error upserting users:', userErr.message);
+      return false;
     }
 
-    // 2. Save to candidate_profiles if candidate
-    if (profileData.role === 'candidate' || !profileData.role) {
-      const candidatePayload: any = {
-        user_id: userId,
-        bio: profileData.bio || '',
-        headline: profileData.headline || profileData.education || '',
-        location: profileData.preferredLocation || profileData.location || '',
-        resume_url: profileData.resumeUrl || '',
-      };
-
-      if (profileData.education) candidatePayload.education = profileData.education;
-      if (profileData.experienceYears) candidatePayload.experience_years = profileData.experienceYears;
-      if (Array.isArray(profileData.skills)) candidatePayload.skills = profileData.skills;
-
-      const { error: candidateErr } = await supabase
-        .from('candidate_profiles')
-        .upsert(candidatePayload, { onConflict: 'user_id' });
-
-      if (candidateErr) {
-        console.warn('[ProfileService] Error upserting candidate_profiles:', candidateErr.message);
-      }
-
-      // 3. Save skills to user_skills table if provided
-      if (Array.isArray(profileData.skills) && profileData.skills.length > 0) {
-        await profileService.saveUserSkills(userId, profileData.skills);
-      }
-    }
     return true;
   },
 
   async saveUserSkills(userId: string, skillNames: string[]) {
     if (!isValidUUID(userId) || !skillNames.length) return;
     try {
-      // First delete existing user_skills
-      await supabase.from('user_skills').delete().eq('user_id', userId);
-
-      // Insert skill names
-      const skillRows = skillNames.map(name => ({
-        user_id: userId,
-        skill_name: name,
-      }));
-
-      const { error } = await supabase.from('user_skills').insert(skillRows);
+      const { error } = await supabase
+        .from('users')
+        .update({ skills: skillNames })
+        .eq('id', userId);
+        
       if (error) {
-        console.warn('[ProfileService] user_skills insert error:', error.message);
+        console.warn('[ProfileService] Error saving skills:', error.message);
       }
     } catch {
-      // Ignore schema variations
+      // Ignore
     }
   },
 
   async getCandidateProfile(userId: string) {
     if (!isValidUUID(userId)) return null;
-
-    const { data: profile } = await supabase
-      .from('candidate_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
 
     const { data: userRow } = await supabase
       .from('users')
@@ -348,24 +334,31 @@ export const profileService = {
       .eq('id', userId)
       .maybeSingle();
 
-    const { data: skillsData } = await supabase
-      .from('user_skills')
-      .select('skill_name')
-      .eq('user_id', userId);
+    if (!userRow) return null;
 
-    const skillsList = skillsData ? skillsData.map((s: any) => s.skill_name) : (profile?.skills || []);
+    let educationString = 'B.Tech Computer Science';
+    if (userRow.education && Array.isArray(userRow.education) && userRow.education.length > 0) {
+      educationString = userRow.education[0]?.institution || 'B.Tech Computer Science';
+    }
+
+    let experienceString = '0';
+    if (userRow.experience && Array.isArray(userRow.experience) && userRow.experience.length > 0) {
+      experienceString = userRow.experience[0]?.title?.replace(' Years Experience', '') || '0';
+    }
 
     return {
       userId,
-      fullName: userRow?.full_name || 'Candidate',
-      email: userRow?.email || '',
-      phone: userRow?.phone || '',
-      education: profile?.education || profile?.headline || 'B.Tech Computer Science',
-      experienceYears: profile?.experience_years || '0',
-      location: profile?.location || 'Remote',
-      bio: profile?.bio || '',
-      resumeUrl: profile?.resume_url || '',
-      skills: skillsList.length > 0 ? skillsList : ['React', 'TypeScript', 'Tailwind CSS'],
+      fullName: userRow.full_name || 'Candidate',
+      email: userRow.email || '',
+      phone: userRow.phone || '',
+      education: educationString,
+      experienceYears: experienceString,
+      location: userRow.location || 'Remote',
+      bio: userRow.bio || '',
+      resumeUrl: userRow.resume_url || '',
+      skills: Array.isArray(userRow.skills) && userRow.skills.length > 0 
+        ? userRow.skills 
+        : ['React', 'TypeScript', 'Tailwind CSS'],
     };
   },
 
