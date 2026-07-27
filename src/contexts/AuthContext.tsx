@@ -293,6 +293,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as Provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
       });
 
       if (error) {

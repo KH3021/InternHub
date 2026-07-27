@@ -20,7 +20,7 @@ function AuthLoader() {
 }
 
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, role, isLoading } = useAuth();
+  const { isAuthenticated, role, user, isLoading } = useAuth();
   const location = useLocation();
 
   // Wait for Supabase session to be resolved
@@ -29,6 +29,11 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   // Not logged in → send to login, preserving intended destination
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If they are logged in but profile is not complete, and they are NOT on the wizard page, force them to the wizard.
+  if (user && !user.profileCompleted && !location.pathname.startsWith('/wizard')) {
+    return <Navigate to={`/wizard/${role}`} replace />;
   }
 
   // Role-restricted route: redirect to their own dashboard
