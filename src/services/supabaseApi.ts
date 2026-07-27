@@ -32,7 +32,7 @@ export const categoryService = {
       .limit(12);
 
     if (error || !data || data.length === 0) {
-      return fallbackCategories;
+      return [];
     }
 
     return data.map((c: any) => ({
@@ -56,7 +56,7 @@ export const jobService = {
       .limit(6);
 
     if (error || !data || data.length === 0) {
-      return fallbackJobs;
+      return [];
     }
 
     // Filter to non-internship rows (any column may indicate type)
@@ -75,7 +75,7 @@ export const jobService = {
       .limit(6);
 
     if (error || !data || data.length === 0) {
-      return fallbackInternships;
+      return [];
     }
 
     const internships = data.filter((j: any) =>
@@ -125,7 +125,7 @@ export const companyService = {
       .limit(8);
 
     if (error || !data || data.length === 0) {
-      return fallbackCompanies;
+      return [];
     }
 
     return data.map((c: any) => ({
@@ -380,18 +380,7 @@ export const profileService = {
         .upload(filePath, file, { upsert: true });
 
       if (error) {
-        console.warn('[Storage] Upload to Supabase bucket error, using DataURL fallback:', error.message);
-        // Fallback to Base64 Data URL if bucket isn't created in Supabase Dashboard
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve({ url: reader.result as string, error: null });
-          };
-          reader.onerror = () => {
-            resolve({ url: null, error: 'Failed to read resume file.' });
-          };
-          reader.readAsDataURL(file);
-        });
+        return { url: null, error: error.message || 'Failed to upload to Supabase bucket.' };
       }
 
       // Get public URL
@@ -408,7 +397,7 @@ export const profileService = {
 // ============================================================================
 export const notificationService = {
   async getUserNotifications(userId: string): Promise<NotificationItem[]> {
-    if (!isValidUUID(userId)) return fallbackNotifications;
+    if (!isValidUUID(userId)) return [];
 
     const { data, error } = await supabase
       .from('notifications')
@@ -416,7 +405,7 @@ export const notificationService = {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) return fallbackNotifications;
+    if (error || !data || data.length === 0) return [];
 
     return data.map((n: any) => ({
       id: n.id,
@@ -481,115 +470,3 @@ function jobRowToInternship(j: any): Internship {
   };
 }
 
-// ============================================================================
-// FALLBACK DATA (shown when tables are empty)
-// ============================================================================
-const fallbackCategories: Category[] = [
-  { id: '1', name: 'Software Development', slug: 'software-development', iconName: 'Code2', count: 1240 },
-  { id: '2', name: 'UI/UX & Product Design', slug: 'design', iconName: 'Palette', count: 850 },
-  { id: '3', name: 'Data Science & AI', slug: 'data-science', iconName: 'Brain', count: 620 },
-  { id: '4', name: 'Digital Marketing', slug: 'marketing', iconName: 'Megaphone', count: 430 },
-  { id: '5', name: 'Product Management', slug: 'product-management', iconName: 'Briefcase', count: 390 },
-  { id: '6', name: 'Finance & Business', slug: 'finance', iconName: 'DollarSign', count: 280 },
-  { id: '7', name: 'Cybersecurity', slug: 'cybersecurity', iconName: 'Shield', count: 210 },
-  { id: '8', name: 'Human Resources', slug: 'human-resources', iconName: 'Users', count: 175 },
-];
-
-const fallbackJobs: Job[] = [
-  {
-    id: 'job-1',
-    title: 'Senior Full Stack Engineer',
-    companyName: 'Stripe Global',
-    companyLogoBg: 'bg-indigo-600',
-    companyLogoText: 'ST',
-    location: 'San Francisco, CA (Remote)',
-    salary: '$140,000 - $185,000 / yr',
-    workMode: 'Remote',
-    tags: ['React', 'Node.js', 'TypeScript', 'AWS'],
-    postedTime: '2 hours ago',
-    featured: true,
-  },
-  {
-    id: 'job-2',
-    title: 'Lead Product Designer',
-    companyName: 'Figma Cloud',
-    companyLogoBg: 'bg-rose-500',
-    companyLogoText: 'FG',
-    location: 'New York, NY (Hybrid)',
-    salary: '$130,000 - $165,000 / yr',
-    workMode: 'Hybrid',
-    tags: ['Figma', 'UI/UX', 'Design Systems'],
-    postedTime: '5 hours ago',
-    featured: true,
-  },
-  {
-    id: 'job-3',
-    title: 'AI / ML Infrastructure Engineer',
-    companyName: 'OpenTech Labs',
-    companyLogoBg: 'bg-emerald-600',
-    companyLogoText: 'OT',
-    location: 'Austin, TX (Remote)',
-    salary: '$160,000 - $210,000 / yr',
-    workMode: 'Remote',
-    tags: ['Python', 'PyTorch', 'Kubernetes'],
-    postedTime: '1 day ago',
-    featured: true,
-  },
-];
-
-const fallbackInternships: Internship[] = [
-  {
-    id: 'intern-1',
-    title: 'Frontend Engineering Intern',
-    companyName: 'Metaverse Labs',
-    companyLogoBg: 'bg-blue-600',
-    companyLogoText: 'ML',
-    location: 'Menlo Park, CA',
-    stipend: '$8,500 / month',
-    duration: '3 Months',
-    workMode: 'On-site',
-    tags: ['React', 'JavaScript', 'Tailwind'],
-    postedTime: '3 hours ago',
-    featured: true,
-  },
-  {
-    id: 'intern-2',
-    title: 'Data Science Intern',
-    companyName: 'Databricks',
-    companyLogoBg: 'bg-amber-500',
-    companyLogoText: 'DB',
-    location: 'San Francisco, CA',
-    stipend: '$7,800 / month',
-    duration: '6 Months',
-    workMode: 'Hybrid',
-    tags: ['Python', 'SQL', 'Spark'],
-    postedTime: '6 hours ago',
-    featured: true,
-  },
-  {
-    id: 'intern-3',
-    title: 'Cybersecurity Operations Intern',
-    companyName: 'CrowdStrike',
-    companyLogoBg: 'bg-purple-600',
-    companyLogoText: 'CS',
-    location: 'Remote',
-    stipend: '$6,500 / month',
-    duration: '4 Months',
-    workMode: 'Remote',
-    tags: ['Python', 'Linux', 'Network Security'],
-    postedTime: '1 day ago',
-    featured: true,
-  },
-];
-
-const fallbackCompanies: Company[] = [
-  { id: 'comp-1', name: 'Google', logoBg: 'bg-blue-500', logoText: 'GO', industry: 'Cloud & Search', activeJobs: 42, featured: true },
-  { id: 'comp-2', name: 'Microsoft', logoBg: 'bg-indigo-600', logoText: 'MS', industry: 'Enterprise Software', activeJobs: 38, featured: true },
-  { id: 'comp-3', name: 'Apple', logoBg: 'bg-slate-900', logoText: 'AP', industry: 'Hardware & OS', activeJobs: 29, featured: true },
-  { id: 'comp-4', name: 'Amazon', logoBg: 'bg-amber-600', logoText: 'AM', industry: 'E-Commerce & AWS', activeJobs: 54, featured: true },
-];
-
-const fallbackNotifications: NotificationItem[] = [
-  { id: 'n1', title: 'Welcome to InternHub!', message: 'Your account is ready. Complete your profile to get started.', time: 'Just now', read: false, type: 'system' },
-  { id: 'n2', title: 'New Internship Alert', message: 'Metaverse Labs posted a new Frontend Engineering Internship.', time: '2h ago', read: false, type: 'system' },
-];

@@ -79,23 +79,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    try {
-      const saved = localStorage.getItem('internhub_fallback_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState<UserProfile | null>(null);
 
-  const [session, setSession] = useState<Session | null>(() => {
-    try {
-      const saved = localStorage.getItem('internhub_fallback_session');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [session, setSession] = useState<Session | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
@@ -206,8 +192,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (event === 'SIGNED_OUT') {
           setUser(null);
           setSession(null);
-          localStorage.removeItem('internhub_fallback_user');
-          localStorage.removeItem('internhub_fallback_session');
           localStorage.removeItem('pendingUser');
         }
 
@@ -227,36 +211,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Helper to establish fallback user session when database tables don't exist yet
-  const setFallbackSession = (email: string, fullName: string, role: UserRole) => {
-    const fallbackUser: UserProfile = {
-      id: generateUUID(),
-      email,
-      fullName: fullName || email.split('@')[0],
-      role,
-      profileCompleted: true,
-    };
-    const mockSession = {
-      access_token: 'demo-token-' + Date.now(),
-      token_type: 'bearer',
-      expires_in: 86400,
-      refresh_token: 'demo-refresh-' + Date.now(),
-      user: {
-        id: fallbackUser.id,
-        email: fallbackUser.email,
-        user_metadata: { full_name: fallbackUser.fullName, role: fallbackUser.role },
-        app_metadata: {},
-        aud: 'authenticated',
-        created_at: new Date().toISOString(),
-      },
-    } as any;
-
-    setUser(fallbackUser);
-    setSession(mockSession);
-    localStorage.setItem('internhub_fallback_user', JSON.stringify(fallbackUser));
-    localStorage.setItem('internhub_fallback_session', JSON.stringify(mockSession));
-    return fallbackUser;
-  };
 
   // ── signIn with Email & Password ─────────────────────────────────────────
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
@@ -264,40 +218,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        // If Supabase 500 error or user exists in fallback mode, establish fallback session
-        if (error.status === 500 || error.name === 'AuthRetryableFetchError' || error.message === '{}') {
-          setFallbackSession(email, email.split('@')[0], 'candidate');
-          setIsLoading(false);
-          return { error: null };
-        }
         setIsLoading(false);
         return { error: formatAuthError(error) };
       }
       setIsLoading(false);
       return { error: null };
-    } catch {
-      setFallbackSession(email, email.split('@')[0], 'candidate');
+    } catch (e: any) {
       setIsLoading(false);
-      return { error: null };
+      return { error: formatAuthError(e) };
     }
   };
 
-  // ── signIn with Mobile / Phone ───────────────────────────────────────────
+  // ── signIn with Mobile / Phone ─────────────────────────────────────────
   const signInWithPhone = async (phone: string, password: string): Promise<{ error: string | null }> => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ phone, password });
       if (error) {
-        setFallbackSession(`${phone.replace(/\D/g, '')}@mobile.user`, 'Mobile User', 'candidate');
         setIsLoading(false);
-        return { error: null };
+        return { error: formatAuthError(error) };
       }
       setIsLoading(false);
       return { error: null };
-    } catch {
-      setFallbackSession(`${phone.replace(/\D/g, '')}@mobile.user`, 'Mobile User', 'candidate');
+    } catch (e: any) {
       setIsLoading(false);
-      return { error: null };
+      return { error: formatAuthError(e) };
     }
   };
 
@@ -321,16 +266,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ── Verify OTP ───────────────────────────────────────────────────────────
   const verifyOtp = async (phoneOrEmail: string, token: string, isPhone: boolean): Promise<{ error: string | null }> => {
     setIsLoading(true);
-    if (token === '123456' || token.length === 6) {
-      setFallbackSession(
-        phoneOrEmail.includes('@') ? phoneOrEmail : `${phoneOrEmail}@mobile.user`,
-        'Verified User',
-        'candidate'
-      );
-      setIsLoading(false);
-      return { error: null };
-    }
-
     try {
       let err: any = null;
       if (isPhone) {
@@ -341,14 +276,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         err = error;
       }
       if (err) {
-        setFallbackSession(phoneOrEmail, 'Verified User', 'candidate');
+        setIsLoading(false);
+        return { error: formatAuthError(err) };
       }
       setIsLoading(false);
       return { error: null };
-    } catch {
-      setFallbackSession(phoneOrEmail, 'Verified User', 'candidate');
+    } catch (e: any) {
       setIsLoading(false);
-      return { error: null };
+      return { error: formatAuthError(e) };
     }
   };
 
@@ -410,23 +345,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        const isRateLimitOrServerError =
-          error.status === 500 ||
-          error.status === 429 ||
-          error.name === 'AuthRetryableFetchError' ||
-          error.message === '{}' ||
-          error.message.toLowerCase().includes('rate limit');
-
-        if (isRateLimitOrServerError) {
-          console.warn('[Auth] Rate limit or server error encountered — creating local session and forcefully adding to database.');
-          const fallbackId = generateUUID();
-          // Explicitly insert into database so user is added
-          await insertUserProfile(fallbackId, data.email, data.fullName, data.role);
-          setFallbackSession(data.email, data.fullName, data.role);
-          setShowWelcomeTour(true);
-          setIsLoading(false);
-          return { error: null, emailSent: false };
-        }
         setIsLoading(false);
         return { error: formatAuthError(error) };
       }
