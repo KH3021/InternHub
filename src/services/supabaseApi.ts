@@ -294,7 +294,10 @@ export const profileService = {
     
     if (profileData.bio !== undefined) userPayload.bio = profileData.bio;
     if (profileData.preferredLocation || profileData.location) userPayload.location = profileData.preferredLocation || profileData.location;
-    if (profileData.resumeUrl !== undefined) userPayload.resume_url = profileData.resumeUrl;
+    if (profileData.resumeUrl !== undefined) {
+      userPayload.resume_url = profileData.resumeUrl;
+      await supabase.auth.updateUser({ data: { resumeUrl: profileData.resumeUrl } });
+    }
     
     if (Array.isArray(profileData.skills)) userPayload.skills = profileData.skills;
     
@@ -348,6 +351,9 @@ export const profileService = {
       .eq('id', userId)
       .maybeSingle();
 
+    const { data: authData } = await supabase.auth.getUser();
+    const resumeUrlFromAuth = authData?.user?.user_metadata?.resumeUrl || '';
+
     if (!userRow) return null;
 
     let educationString = 'B.Tech Computer Science';
@@ -369,7 +375,7 @@ export const profileService = {
       experienceYears: experienceString,
       location: userRow.location || 'Remote',
       bio: userRow.bio || '',
-      resumeUrl: userRow.resume_url || '',
+      resumeUrl: resumeUrlFromAuth || userRow.resume_url || '',
       skills: Array.isArray(userRow.skills) && userRow.skills.length > 0 
         ? userRow.skills 
         : ['React', 'TypeScript', 'Tailwind CSS'],
