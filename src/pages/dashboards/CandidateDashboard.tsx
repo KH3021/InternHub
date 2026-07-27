@@ -238,8 +238,8 @@ export default function CandidateDashboard() {
       )}
 
       {(path === '/dashboard' || path === '/dashboard/applications') && (
-        {/* Applications List Table */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+          {/* Applications List Table */}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">My Submitted Applications</h3>
           <Link to="/jobs" className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
