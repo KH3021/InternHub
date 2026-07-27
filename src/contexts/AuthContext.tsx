@@ -43,6 +43,7 @@ export interface SignUpData {
   fullName: string;
   role: UserRole;
   phone?: string;
+  companyName?: string;
 }
 
 export interface OtpData {
@@ -341,6 +342,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             full_name: data.fullName,
             role: data.role,
             phone: data.phone ?? '',
+            company_name: data.companyName ?? '',
           },
         },
       });

@@ -32,11 +32,12 @@ export default function RegisterRecruiter() {
       fullName,
       role: 'recruiter',
       phone,
+      companyName,
     });
     setIsSubmitting(false);
 
     if (err) { setError(typeof err === 'string' ? err : (err as any)?.message || 'Registration failed'); return; }
-    if (sent) { setEmailSent(true); } else { navigate('/wizard/recruiter'); }
+    if (sent) { setEmailSent(true); } else { navigate('/wizard/recruiter', { state: { companyName } }); }
   };
 
   if (emailSent) {

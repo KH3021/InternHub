@@ -128,6 +128,14 @@ export const jobService = {
   },
 
   async createJob(jobData: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    let companyId = '00000000-0000-0000-0002-000000000001'; // Default
+    if (jobData.recruiterId) {
+      const { data: recruiter } = await supabase.from('users').select('company_id').eq('id', jobData.recruiterId).maybeSingle();
+      if (recruiter?.company_id) {
+        companyId = recruiter.company_id;
+      }
+    }
+
     const payload = {
       title: jobData.title || 'New Position',
       location: jobData.location || 'Remote',
@@ -136,7 +144,7 @@ export const jobService = {
       work_mode: jobData.workMode || 'Remote',
       description: jobData.description || 'Job description goes here',
       posted_by: jobData.recruiterId || null,
-      company_id: '00000000-0000-0000-0002-000000000001' // Defaulting to Google for now since we don't have company setup in UI
+      company_id: companyId
     };
 
     const { data, error } = await supabase
@@ -291,6 +299,7 @@ export const profileService = {
     if (profileData.email) userPayload.email = profileData.email;
     if (profileData.role) userPayload.role = profileData.role;
     if (profileData.phone) userPayload.phone = profileData.phone;
+    if (profileData.companyId) userPayload.company_id = profileData.companyId;
     
     if (profileData.bio !== undefined) userPayload.bio = profileData.bio;
     if (profileData.preferredLocation || profileData.location) userPayload.location = profileData.preferredLocation || profileData.location;

@@ -1,15 +1,17 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Building, Upload, CheckCircle2, ArrowRight, AlertCircle, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { profileService } from '../../services/supabaseApi';
+import { profileService, supabase } from '../../services/supabaseApi';
 
 export default function RecruiterWizard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [designation, setDesignation] = useState('Senior Technical Recruiter');
+  const [companyName, setCompanyName] = useState(location.state?.companyName || '');
   const [companyBio, setCompanyBio] = useState('Leading provider of enterprise software solutions.');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUploaded, setLogoUploaded] = useState(false);
@@ -39,11 +41,34 @@ export default function RecruiterWizard() {
     if (user?.id) {
       setIsSaving(true);
       try {
+        // Create company in companies table if not exists
+        let companyId = '00000000-0000-0000-0002-000000000001'; // Fallback
+        if (companyName) {
+          const { data: existingCompany } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('name', companyName)
+            .maybeSingle();
+            
+          if (existingCompany) {
+            companyId = existingCompany.id;
+          } else {
+            // Insert new company
+            const { data: newCompany } = await supabase
+              .from('companies')
+              .insert({ name: companyName, industry: 'Technology', active_jobs: 0 })
+              .select('id')
+              .single();
+            if (newCompany) companyId = newCompany.id;
+          }
+        }
+
         await profileService.saveProfile(user.id, {
           email: user.email,
           fullName: user.fullName,
           role: 'recruiter',
-          companyName: designation,
+          companyName: companyName || designation, // Keep backward compatible
+          companyId: companyId,
           bio: companyBio,
         });
       } catch (err) {
@@ -69,6 +94,20 @@ export default function RecruiterWizard() {
       </div>
 
       <form onSubmit={handleComplete} className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            Company Name
+          </label>
+          <input
+            type="text"
+            required
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            placeholder="e.g. TechCorp Inc."
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
             Your Designation
