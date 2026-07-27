@@ -143,28 +143,52 @@ export const companyService = {
 // ============================================================================
 // 4. APPLICATIONS (Table: applications)
 // ============================================================================
+// Helper to map dummy 'job-1' or 'intern-1' to valid UUIDs
+function getDummyUuid(dummyId: string): string {
+  if (dummyId.startsWith('job-')) {
+    const num = dummyId.split('-')[1];
+    return `00000000-0000-0000-0000-${num.padStart(12, '0')}`;
+  }
+  if (dummyId.startsWith('intern-')) {
+    const num = dummyId.split('-')[1];
+    return `11111111-0000-0000-0000-${num.padStart(12, '0')}`;
+  }
+  return dummyId;
+}
+
 export const applicationService = {
   async applyForJob(candidateId: string, jobId: string, jobTitle?: string, companyName?: string, coverLetter?: string, resumeUrl?: string) {
-    const newApp = { 
-      id: Date.now().toString(), 
-      job_id: jobId, 
-      candidate_id: candidateId, 
-      status: 'applied', 
-      created_at: new Date().toISOString(),
-      cover_letter: coverLetter || `Application submitted for ${jobTitle || 'Position'} at ${companyName || 'Company'}.`,
-      resume_url: resumeUrl || ''
-    };
-
     if (!isValidUUID(candidateId)) {
-      return { success: true, data: newApp };
+      return { success: false, error: 'Invalid candidate ID' };
+    }
+
+    let finalJobId = jobId;
+
+    // If using dummy data, we must upsert a dummy job into Supabase first to pass the foreign key constraint
+    if (!isValidUUID(jobId)) {
+      finalJobId = getDummyUuid(jobId);
+      
+      const dummyJob = {
+        id: finalJobId,
+        title: jobTitle || 'Featured Position',
+        company_name: companyName || 'Company',
+        job_type: jobId.startsWith('intern') ? 'internship' : 'full-time',
+        location: 'Remote',
+        salary: 'Varies',
+        work_mode: 'Remote'
+      };
+
+      // Silently upsert dummy job. If this fails due to missing company_id schema etc, the insert below might fail,
+      // but this is the best effort to persist dummy applications natively in Supabase.
+      await supabase.from('jobs').upsert(dummyJob, { onConflict: 'id' }).maybeSingle();
     }
 
     const payload: any = {
-      job_id: isValidUUID(jobId) ? jobId : '00000000-0000-0000-0000-000000000001',
+      job_id: finalJobId,
       candidate_id: candidateId,
       status: 'applied',
-      cover_letter: newApp.cover_letter,
-      resume_url: newApp.resume_url,
+      cover_letter: coverLetter || `Application submitted for ${jobTitle || 'Position'} at ${companyName || 'Company'}.`,
+      resume_url: resumeUrl || '',
     };
 
     const { data, error } = await supabase
@@ -175,14 +199,7 @@ export const applicationService = {
 
     if (error) {
       console.warn('[ApplicationService] Error inserting application into Supabase:', error.message);
-      // Save to localStorage as fallback for dummy data
-      const fallbackApps = JSON.parse(localStorage.getItem(`fallback_apps_${candidateId}`) || '[]');
-      // Avoid duplicate applications in fallback
-      if (!fallbackApps.find((a: any) => a.job_id === jobId)) {
-        fallbackApps.push(newApp);
-        localStorage.setItem(`fallback_apps_${candidateId}`, JSON.stringify(fallbackApps));
-      }
-      return { success: true, data: newApp };
+      return { success: false, error: error.message };
     }
 
     return { success: true, data };
@@ -193,15 +210,13 @@ export const applicationService = {
 
     const { data, error } = await supabase
       .from('applications')
-      .select('*')
+      .select('*, jobs(*)')
       .eq('candidate_id', candidateId)
       .order('created_at', { ascending: false });
 
-    const fallbackApps = JSON.parse(localStorage.getItem(`fallback_apps_${candidateId}`) || '[]');
-
-    if (error || !data) return fallbackApps;
+    if (error || !data) return [];
     
-    return [...data, ...fallbackApps].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return data;
   },
 };
 
