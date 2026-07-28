@@ -139,11 +139,12 @@ export const jobService = {
     const payload = {
       title: jobData.title || 'New Position',
       location: jobData.location || 'Remote',
-      salary: jobData.salary || 'Negotiable',
+      salary_min: parseInt((jobData.salary || '0').replace(/[^0-9]/g, '')) || null,
+      salary_max: parseInt((jobData.salary || '0').replace(/[^0-9]/g, '')) || null,
       job_type: jobData.jobType || 'full-time',
-      work_mode: jobData.workMode || 'Remote',
+      remote: jobData.workMode === 'Remote',
       description: jobData.description || 'Job description goes here',
-      posted_by: jobData.recruiterId || null,
+      recruiter_id: jobData.recruiterId || null,
       company_id: companyId
     };
 
@@ -167,7 +168,7 @@ export const jobService = {
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
-      .eq('posted_by', recruiterId)
+      .eq('recruiter_id', recruiterId)
       .order('created_at', { ascending: false });
 
     if (error || !data) return [];
@@ -560,8 +561,8 @@ function jobRowToJob(j: any): Job {
     companyLogoBg: pickColor(companyName),
     companyLogoText: companyName.substring(0, 2).toUpperCase(),
     location: j.location || 'Remote',
-    salary: j.salary || j.salary_range || '$80,000 - $120,000 / yr',
-    workMode: j.work_mode || j.workMode || (j.is_remote ? 'Remote' : 'Hybrid'),
+    salary: j.salary || j.salary_range || (j.salary_min ? `$${j.salary_min.toLocaleString()}` : '$80,000 - $120,000 / yr'),
+    workMode: j.work_mode || j.workMode || (j.remote ? 'Remote' : 'Hybrid'),
     tags: Array.isArray(j.tags) ? j.tags : Array.isArray(j.skills) ? j.skills : ['TypeScript', 'React'],
     postedTime: getRelativeTime(j.created_at || j.posted_at),
     featured: j.is_featured ?? j.featured ?? true,
