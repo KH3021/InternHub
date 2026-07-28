@@ -70,6 +70,7 @@ export default function RecruiterWizard() {
           role: 'recruiter',
           companyName: companyName || designation, // Keep backward compatible
           companyId: companyId,
+          designation: designation,
           bio: companyBio,
         });
       } catch (err) {

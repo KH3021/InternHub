@@ -332,6 +332,44 @@ export const profileService = {
       return false;
     }
 
+    // Insert into dedicated profile tables
+    if (profileData.role === 'recruiter' || profileData.companyId) {
+      const recPayload: any = {
+        user_id: userId,
+        company_id: profileData.companyId || null,
+        designation: profileData.designation || 'Recruiter'
+      };
+      const { error: recErr } = await supabase
+        .from('recruiter_profiles')
+        .upsert(recPayload, { onConflict: 'user_id' });
+      if (recErr) console.warn('[ProfileService] Error upserting recruiter_profiles:', recErr.message);
+    } 
+    
+    if (profileData.role === 'candidate' || (!profileData.role && !profileData.companyId)) {
+      const candPayload: any = {
+        user_id: userId,
+        skills: Array.isArray(profileData.skills) ? profileData.skills : [],
+        resume_url: profileData.resumeUrl || null
+      };
+      
+      if (profileData.education) {
+        candPayload.education = Array.isArray(profileData.education) 
+          ? profileData.education[0]?.institution || '' 
+          : String(profileData.education);
+      }
+      
+      if (profileData.experienceYears) {
+        candPayload.experience = Array.isArray(profileData.experienceYears)
+          ? profileData.experienceYears[0]?.title || ''
+          : String(profileData.experienceYears);
+      }
+      
+      const { error: candErr } = await supabase
+        .from('candidate_profiles')
+        .upsert(candPayload, { onConflict: 'user_id' });
+      if (candErr) console.warn('[ProfileService] Error upserting candidate_profiles:', candErr.message);
+    }
+
     return true;
   },
 
