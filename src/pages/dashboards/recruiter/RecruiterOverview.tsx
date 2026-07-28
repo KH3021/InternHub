@@ -8,6 +8,11 @@ import { Link } from 'react-router-dom';
 export default function RecruiterOverview() {
   const { user } = useAuth();
   const [activeJobs, setActiveJobs] = useState<Job[]>([]);
+  const [stats, setStats] = useState({
+    totalApplicants: 0,
+    shortlisted: 0,
+    interviewsScheduled: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // Applicants Modal State
@@ -16,19 +21,33 @@ export default function RecruiterOverview() {
   const [isLoadingApplicants, setIsLoadingApplicants] = useState(false);
 
   useEffect(() => {
-    const loadJobs = () => {
-      if (user?.id) {
-        setIsLoading(true);
-        jobService.getRecruiterJobs(user.id).then((jobs) => {
-          setActiveJobs(jobs || []);
-          setIsLoading(false);
-        }).catch(err => {
-          console.error(err);
-          setIsLoading(false);
-        });
+    const loadData = async () => {
+      if (!user?.id) return;
+      setIsLoading(true);
+      try {
+        const jobs = await jobService.getRecruiterJobs(user.id);
+        setActiveJobs(jobs || []);
+
+        if (jobs && jobs.length > 0) {
+          let allApps: any[] = [];
+          for (const job of jobs) {
+            const apps = await applicationService.getJobApplications(job.id);
+            allApps = [...allApps, ...apps];
+          }
+
+          setStats({
+            totalApplicants: allApps.length,
+            shortlisted: allApps.filter(app => app.status === 'shortlisted' || app.status === 'accepted').length,
+            interviewsScheduled: allApps.filter(app => app.status === 'interviewing' || app.interview_at).length,
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    loadJobs();
+    loadData();
   }, [user]);
 
   const openApplicantsModal = async (jobId: string) => {
@@ -64,16 +83,20 @@ export default function RecruiterOverview() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
           <div className="text-xs text-slate-500 font-semibold">Total Applicants</div>
           <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
-            {activeJobs.length > 0 ? Math.floor(Math.random() * 50) + 10 : 0}
+            {stats.totalApplicants}
           </div>
         </div>
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
           <div className="text-xs text-slate-500 font-semibold">Shortlisted Candidates</div>
-          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">0</div>
+          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+            {stats.shortlisted}
+          </div>
         </div>
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
           <div className="text-xs text-slate-500 font-semibold">Interviews Scheduled</div>
-          <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">0</div>
+          <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
+            {stats.interviewsScheduled}
+          </div>
         </div>
       </div>
 
