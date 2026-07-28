@@ -250,6 +250,39 @@ export const applicationService = {
     
     return data;
   },
+
+  async getJobApplications(jobId: string) {
+    if (!isValidUUID(jobId)) return [];
+
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*, candidate:users(id, email, full_name, role, avatar_url, candidate_profiles(*))')
+      .eq('job_id', jobId)
+      .order('applied_at', { ascending: false });
+
+    if (error || !data) {
+      console.warn('[ApplicationService] Error fetching job applications:', error?.message);
+      return [];
+    }
+    
+    return data;
+  },
+
+  async updateApplicationStatus(applicationId: string, status: string) {
+    const { data, error } = await supabase
+      .from('applications')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', applicationId)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.warn('[ApplicationService] Error updating status:', error.message);
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true, data };
+  }
 };
 
 // ============================================================================
