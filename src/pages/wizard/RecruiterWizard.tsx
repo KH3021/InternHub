@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Building, Upload, CheckCircle2, ArrowRight, AlertCircle, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { profileService, supabase } from '../../services/supabaseApi';
+import { profileService } from '../../services/supabaseApi';
+import { supabase } from '../../utils/supabase';
 
 export default function RecruiterWizard() {
   const navigate = useNavigate();
