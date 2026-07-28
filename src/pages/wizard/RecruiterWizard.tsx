@@ -54,11 +54,12 @@ export default function RecruiterWizard() {
             companyId = existingCompany.id;
           } else {
             // Insert new company
-            const { data: newCompany } = await supabase
+            const { data: newCompany, error: companyErr } = await supabase
               .from('companies')
-              .insert({ name: companyName, industry: 'Technology', active_jobs: 0 })
+              .insert({ name: companyName, industry: 'Technology', active_jobs: 0, owner_id: user.id })
               .select('id')
               .single();
+            if (companyErr) console.warn('[RecruiterWizard] Error inserting company:', companyErr.message);
             if (newCompany) companyId = newCompany.id;
           }
         }

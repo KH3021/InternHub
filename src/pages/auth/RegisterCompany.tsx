@@ -72,12 +72,16 @@ export default function RegisterCompany() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+        {/* Dummy inputs to absorb aggressive browser autofill */}
+        <input type="email" name="fake_email" className="hidden" autoComplete="email" />
+        <input type="password" name="fake_password" className="hidden" autoComplete="current-password" />
+        
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Company Name</label>
           <div className="relative">
             <Building className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme Corporation"
+            <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme Corporation" autoComplete="new-password" name={`company_${Math.random()}`}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
         </div>
@@ -101,7 +105,7 @@ export default function RegisterCompany() {
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Website (optional)</label>
           <div className="relative">
             <Globe className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://company.com"
+            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://company.com" autoComplete="new-password" name={`website_${Math.random()}`}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
         </div>
@@ -110,7 +114,7 @@ export default function RegisterCompany() {
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Company Email</label>
           <div className="relative">
             <Mail className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hr@company.com"
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hr@company.com" autoComplete="new-password" name={`email_${Math.random()}`}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
         </div>
@@ -119,7 +123,7 @@ export default function RegisterCompany() {
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
           <div className="relative">
             <Lock className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 8 characters"
+            <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 8 characters" autoComplete="new-password" name={`password_${Math.random()}`}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-11 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500" />
             <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -131,7 +135,7 @@ export default function RegisterCompany() {
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Confirm Password</label>
           <div className="relative">
             <Lock className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input type={showPassword ? 'text' : 'password'} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password"
+            <input type={showPassword ? 'text' : 'password'} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" autoComplete="new-password" name={`confirm_${Math.random()}`}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
         </div>
